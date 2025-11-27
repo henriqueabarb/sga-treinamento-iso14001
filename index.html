@@ -1,239 +1,1110 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGA - Gestão de Treinamentos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGA - Gestão de Treinamentos</title>
 
-    <!-- Tailwind via CDN (biblioteca de CSS pronta) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CDN (ok para teste/TCC) -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Chart.js para gráfico de rosca (doughnut) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js para o gráfico -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Fonte Inter (deixa o visual mais moderno) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Fonte Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
 
-    <style>
-        /* Estilo básico da página (cor de fundo, fonte, etc.) */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background-color: #f3f4f6;
+    }
 
-        /* Classe das abas (tabs) do menu Gestor / Funcionário */
-        .nav-tab {
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            font-weight: 500;
-            color: #6B7280; 
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
+    .nav-tab {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
 
-        /* Aba ativa fica com a cor azul e borda embaixo */
-        .nav-tab.active-tab {
-            color: #1E40AF; 
-            border-bottom-color: #1E40AF;
-        }
+    .nav-tab.active-tab {
+      color: #1e40af;
+      border-bottom-color: #1e40af;
+    }
 
-        /* Animação de entrada das páginas (fica mais suave) */
-        .page-content {
-            animation: fadeIn 0.5s ease-in-out;
-        }
+    .page-content {
+      animation: fadeIn 0.5s ease-in-out;
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        /* Container do gráfico de rosca */
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px;
-            max-height: 350px;
-        }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 300px;
+      max-height: 350px;
+    }
 
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 350px;
-            }
-        }
+    @media (min-width: 768px) {
+      .chart-container {
+        height: 350px;
+      }
+    }
 
-        /* Classe genérica para modais (caixas que aparecem por cima da tela) */
-        .modal {
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 50;
-        }
+    .modal {
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+    }
 
-        /* Cores de status */
-        .bg-status-em_dia { background-color: #10B981; }  /* Verde */
-        .text-status-em_dia { color: #059669; }
-        .bg-status-atencao { background-color: #F59E0B; } /* Amarelo */
-        .text-status-atencao { color: #D97706; }
-        .bg-status-vencido { background-color: #EF4444; } /* Vermelho */
-        .text-status-vencido { color: #DC2626; }
-    </style>
+    .bg-status-em_dia {
+      background-color: #10b981;
+    }
+    .text-status-em_dia {
+      color: #059669;
+    }
+    .bg-status-atencao {
+      background-color: #f59e0b;
+    }
+    .text-status-atencao {
+      color: #d97706;
+    }
+    .bg-status-vencido {
+      background-color: #ef4444;
+    }
+    .text-status-vencido {
+      color: #dc2626;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
+  <!-- ============================== -->
+  <!-- TELA DE LOGIN                  -->
+  <!-- ============================== -->
+  <div
+    id="login-screen"
+    class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl mt-12"
+  >
+    <h1 class="text-2xl font-bold text-blue-800 mb-4 text-center">Login SGA</h1>
+    <p class="text-gray-600 mb-6 text-center">
+      Insira sua matrícula para acessar o painel de competência.
+    </p>
 
-    <!-- ============================== -->
-    <!-- TELA DE LOGIN                  -->
-    <!-- ============================== -->
+    <!-- Campo de matrícula -->
+    <input
+      type="text"
+      id="matricula-input"
+      placeholder="Ex: 12345 (Funcionário) ou GESTOR"
+      class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-blue-800 focus:border-blue-800"
+    />
 
-    <!-- Tela inicial onde o usuário digita a matrícula -->
-    <div id="login-screen" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl mt-12">
-        <h1 class="text-2xl font-bold text-blue-800 mb-4 text-center">Login SGA</h1>
-        <p class="text-gray-600 mb-6 text-center">Insira sua matrícula para acessar o painel de competência.</p>
+    <!-- Botão para logar -->
+    <button
+      id="login-button"
+      class="w-full bg-blue-700 text-white p-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors"
+    >
+      Acessar Sistema
+    </button>
 
-        <!-- Campo onde o usuário digita a matrícula -->
-        <input 
-            type="text" 
-            id="matricula-input" 
-            placeholder="Ex: 12345 (Funcionário) ou GESTOR" 
-            class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-blue-800 focus:border-blue-800"
+    <p class="mt-4 text-sm text-gray-500 text-center">
+      Use <strong>GESTOR</strong> para o painel de indicadores.
+    </p>
+  </div>
+
+  <!-- ============================== -->
+  <!-- APP PRINCIPAL                  -->
+  <!-- ============================== -->
+  <div id="app-container" class="hidden">
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+      <!-- Cabeçalho -->
+      <header class="mb-6 flex justify-between items-start gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-blue-800">
+            SGA: Gestão de Treinamentos (ISO 14001)
+          </h1>
+          <p class="text-lg text-gray-600 mt-1">
+            Plataforma interativa para registro e conformidade de treinamentos
+            ambientais (Goiás).
+          </p>
+          <p id="userIdDisplay" class="mt-1 text-sm text-gray-600">
+            Matrícula Atual: N/A
+          </p>
+        </div>
+
+        <!-- Botão de "logout" simples (voltar pro login) -->
+        <button
+          id="logout-button"
+          class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-300 transition-colors"
         >
-
-        <!-- Botão para fazer login -->
-        <button 
-            id="login-button" 
-            class="w-full bg-blue-700 text-white p-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
-            Acessar Sistema
+          ← Voltar para Login
         </button>
+      </header>
 
-        <p class="mt-4 text-sm text-gray-500 text-center">Use 'GESTOR' para o painel de indicadores.</p>
-    </div>
+      <!-- Abas -->
+      <nav class="flex border-b border-gray-300 mb-6">
+        <button id="tab-gestor" class="nav-tab active-tab">
+          Painel do Gestor
+        </button>
+        <button id="tab-funcionario" class="nav-tab">
+          Painel do Funcionário
+        </button>
+      </nav>
 
-    <!-- ============================== -->
-    <!-- CONTAINER PRINCIPAL DA APLICAÇÃO -->
-    <!-- ============================== -->
+      <main>
+        <!-- ============================== -->
+        <!-- PAINEL GESTOR                 -->
+        <!-- ============================== -->
+        <div id="content-gestor" class="page-content">
+          <section id="gestor-dashboard">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">
+              Dashboard de Conformidade
+            </h2>
+            <p class="text-gray-600 mb-6">
+              O gráfico de rosca mostra o resumo dos treinamentos da equipe (Em
+              Dia, Atenção, Vencido). A tabela abaixo detalha os registros por
+              funcionário.
+            </p>
 
-    <!-- Sistema (dashboard). Começa escondido. -->
-    <div id="app-container" class="hidden">
-        <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        
-            <!-- Cabeçalho do sistema -->
-            <header class="mb-6 flex justify-between items-start gap-4">
-                <!-- Lado esquerdo: título e descrição -->
-                <div>
-                    <h1 class="text-3xl font-bold text-blue-800">
-                        SGA: Gestão de Treinamentos (ISO 14001)
-                    </h1>
-                    <p class="text-lg text-gray-600 mt-1">
-                        Plataforma interativa para registro e conformidade de treinamentos ambientais (Goiás).
-                    </p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-semibold text-center mb-4">
+                  Status Geral de Conformidade
+                </h3>
+                <div class="chart-container">
+                  <canvas id="complianceChart"></canvas>
+                </div>
+              </div>
 
-                    <!-- Matrícula atual -->
-                    <p id="userIdDisplay" class="mt-1 text-sm text-gray-600">
-                        Matrícula Atual: N/A
-                    </p>
+              <div class="space-y-4">
+                <div
+                  class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4"
+                >
+                  <div class="p-3 rounded-full bg-status-vencido bg-opacity-20">
+                    <span class="text-2xl text-status-vencido">⚠️</span>
+                  </div>
+                  <div>
+                    <div
+                      id="stat-vencido"
+                      class="text-3xl font-bold text-status-vencido"
+                    >
+                      0
+                    </div>
+                    <div class="text-sm font-medium text-gray-500">
+                      Registros Vencidos
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Botão para "sair" e voltar à tela de login -->
-                <button
-                    id="logout-button"
-                    class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-300 transition-colors">
-                    ← Voltar para Login
-                </button>
-            </header>
+                <div
+                  class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4"
+                >
+                  <div class="p-3 rounded-full bg-status-atencao bg-opacity-20">
+                    <span class="text-2xl text-status-atencao">🔔</span>
+                  </div>
+                  <div>
+                    <div
+                      id="stat-atencao"
+                      class="text-3xl font-bold text-status-atencao"
+                    >
+                      0
+                    </div>
+                    <div class="text-sm font-medium text-gray-500">
+                      Vence em poucos dias
+                    </div>
+                  </div>
+                </div>
 
-            <!-- Abas: Gestor / Funcionário -->
-            <nav class="flex border-b border-gray-300 mb-6">
-                <button id="tab-gestor" class="nav-tab active-tab">Painel do Gestor</button>
-                <button id="tab-funcionario" class="nav-tab">Painel do Funcionário</button>
-            </nav>
+                <div
+                  class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4"
+                >
+                  <div class="p-3 rounded-full bg-status-em_dia bg-opacity-20">
+                    <span class="text-2xl text-status-em_dia">✅</span>
+                  </div>
+                  <div>
+                    <div
+                      id="stat-em_dia"
+                      class="text-3xl font-bold text-status-em_dia"
+                    >
+                      0
+                    </div>
+                    <div class="text-sm font-medium text-gray-500">
+                      Registros em Dia
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
-            <main>
-                <!-- ============================== -->
-                <!-- PAINEL DO GESTOR               -->
-                <!-- ============================== -->
-                <div id="content-gestor" class="page-content">
-                    <section id="gestor-dashboard">
-                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard de Conformidade</h2>
-                        <p class="text-gray-600 mb-6">
-                            Esta seção mostra um resumo dos treinamentos da equipe.
-                            O gráfico de rosca resume Em Dia, Atenção e Vencido, e a tabela mostra os detalhes por funcionário.
-                        </p>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <!-- Card com o gráfico de rosca -->
-                            <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                                <h3 class="text-lg font-semibold text-center mb-4">Status Geral de Conformidade</h3>
-                                <div class="chart-container">
-                                    <canvas id="complianceChart"></canvas>
-                                </div>
-                            </div>
-                            
-                            <!-- Cards numéricos -->
-                            <div class="space-y-4">
-                                <!-- Registros vencidos -->
-                                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
-                                    <div class="p-3 rounded-full bg-status-vencido bg-opacity-20">
-                                        <span class="text-2xl text-status-vencido">⚠️</span>
-                                    </div>
-                                    <div>
-                                        <div id="stat-vencido" class="text-3xl font-bold text-status-vencido">0</div>
-                                        <div class="text-sm font-medium text-gray-500">Registros Vencidos</div>
-                                    </div>
-                                </div>
+          <!-- Tabela da equipe -->
+          <section id="gestor-tabela" class="mt-8">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">
+              Rastreabilidade da Equipe (Registros)
+            </h2>
 
-                                <!-- Registros que vencem em breve -->
-                                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
-                                    <div class="p-3 rounded-full bg-status-atencao bg-opacity-20">
-                                        <span class="text-2xl text-status-atencao">🔔</span>
-                                    </div>
-                                    <div>
-                                        <div id="stat-atencao" class="text-3xl font-bold text-status-atencao">0</div>
-                                        <div class="text-sm font-medium text-gray-500">Vence em poucos dias</div>
-                                    </div>
-                                </div>
+            <div
+              id="loading-gestor"
+              class="text-center text-gray-500 my-8"
+            >
+              Carregando rastreabilidade da equipe...
+            </div>
 
-                                <!-- Registros em dia -->
-                                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
-                                    <div class="p-3 rounded-full bg-status-em_dia bg-opacity-20">
-                                        <span class="text-2xl text-status-em_dia">✅</span>
-                                    </div>
-                                    <div>
-                                        <div id="stat-em_dia" class="text-3xl font-bold text-status-em_dia">0</div>
-                                        <div class="text-sm font-medium text-gray-500">Registros em Dia</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[600px]">
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th
+                        class="p-4 text-left text-sm font-semibold text-gray-600"
+                      >
+                        Matrícula
+                      </th>
+                      <th
+                        class="p-4 text-left text-sm font-semibold text-gray-600"
+                      >
+                        Treinamento
+                      </th>
+                      <th
+                        class="p-4 text-left text-sm font-semibold text-gray-600"
+                      >
+                        Conclusão
+                      </th>
+                      <th
+                        class="p-4 text-left text-sm font-semibold text-gray-600"
+                      >
+                        Validade
+                      </th>
+                      <th
+                        class="p-4 text-center text-sm font-semibold text-gray-600"
+                      >
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="gestor-table-body"
+                    class="divide-y divide-gray-200"
+                  ></tbody>
+                </table>
+              </div>
+            </div>
 
-                    <!-- Tabela com todos os registros da equipe -->
-                    <section id="gestor-tabela" class="mt-8">
-                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">
-                            Rastreabilidade da Equipe (Registros)
-                        </h2>
+            <button
+              id="open-manage-modal-btn"
+              class="mt-6 bg-blue-700 text-white font-medium py-2 px-5 rounded-lg shadow-md hover:bg-blue-800 transition-colors"
+            >
+              Gerenciar Treinamentos
+            </button>
+          </section>
+        </div>
 
-                        <!-- Mensagem enquanto carrega dados -->
-                        <div id="loading-gestor" class="text-center text-gray-500 my-8">
-                            Carregando rastreabilidade da equipe...
-                        </div>
+        <!-- ============================== -->
+        <!-- PAINEL FUNCIONÁRIO             -->
+        <!-- ============================== -->
+        <div id="content-funcionario" class="page-content hidden">
+          <section id="funcionario-treinamentos">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-2xl font-semibold text-gray-700">
+                Meus Treinamentos Obrigatórios
+              </h2>
+            </div>
 
-                        <!-- Tabela de registros -->
-                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                            <div class="overflow-x-auto">
-                                <table class="w-full min-w-[600px]">
-                                    <thead class="bg-gray-100">
-                                        <tr>
-                                            <th class="p-4 text-left text-sm font-semibold text-gray-600">Matrícula</th>
-                                            <th class="p-4 text-left text-sm font-semibold text-gray-600">Treina
+            <p class="text-gray-600 mb-6">
+              Aqui aparecem os treinamentos ambientais obrigatórios. O
+              funcionário pode confirmar a conclusão para registrar a
+              conformidade.
+            </p>
 
+            <div
+              id="loading-funcionario"
+              class="text-center text-gray-500 my-8"
+            >
+              Carregando dados de conformidade...
+            </div>
 
+            <div
+              id="training-list"
+              class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            ></div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- MODAL MENSAGEM                 -->
+  <!-- ============================== -->
+  <div id="message-modal" class="hidden modal">
+    <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+      <div class="mt-3 text-center">
+        <h3
+          id="modal-title"
+          class="text-lg leading-6 font-medium text-gray-900"
+        >
+          Mensagem do Sistema
+        </h3>
+        <div class="mt-2 px-7 py-3">
+          <p id="modal-body" class="text-sm text-gray-500">...</p>
+        </div>
+        <div class="items-center px-4 py-3">
+          <button
+            id="modal-close-button"
+            class="px-4 py-2 bg-blue-700 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- MODAL GERENCIAR TREINAMENTOS   -->
+  <!-- ============================== -->
+  <div id="manage-modal" class="modal hidden">
+    <div
+      class="bg-white w-full max-w-2xl p-6 rounded-lg shadow-xl m-4 max-h-[90vh] overflow-y-auto"
+    >
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold">Gerenciar Treinamentos</h3>
+        <button
+          id="close-manage-modal-btn"
+          class="text-gray-500 hover:text-gray-800"
+        >
+          &times;
+        </button>
+      </div>
+
+      <!-- Form para adicionar -->
+      <h4 class="text-lg font-semibold text-gray-700 mb-2">
+        Adicionar Novo Treinamento
+      </h4>
+      <div
+        class="p-4 border rounded-lg mb-6 bg-gray-50 text-gray-600 space-y-3"
+      >
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Título</label
+          >
+          <input
+            id="novo-treinamento-titulo"
+            type="text"
+            class="w-full border rounded-md p-2 text-sm"
+            placeholder="Ex: Requisitos e Condicionantes da LO (SEMA-GO)"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Periodicidade (dias)</label
+          >
+          <input
+            id="novo-treinamento-periodicidade"
+            type="number"
+            min="1"
+            class="w-full border rounded-md p-2 text-sm"
+            placeholder="Ex: 365"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Público-alvo</label
+          >
+          <input
+            id="novo-treinamento-publico"
+            type="text"
+            class="w-full border rounded-md p-2 text-sm"
+            placeholder="Ex: todos, operação, administrativo..."
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Relevância</label
+          >
+          <input
+            id="novo-treinamento-relevancia"
+            type="text"
+            class="w-full border rounded-md p-2 text-sm"
+            placeholder="Ex: ISO, Legal, Operacional (Goiás)"
+          />
+        </div>
+
+        <button
+          id="btn-adicionar-treinamento"
+          class="mt-2 bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-blue-800"
+        >
+          Adicionar Treinamento
+        </button>
+      </div>
+
+      <h4 class="text-lg font-semibold text-gray-700 mb-2">
+        Treinamentos Cadastrados
+      </h4>
+      <div id="manage-list" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- SCRIPT JS + FIREBASE           -->
+  <!-- ============================== -->
+  <script type="module">
+    // Importes do Firebase (versão modular)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth,
+      signInAnonymously,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      onSnapshot,
+      collection,
+      query,
+      where,
+      serverTimestamp,
+      setLogLevel,
+      addDoc,
+      deleteDoc,
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Config do Firebase (igual do console)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVyqEhlJsxuLeQrtjZRS538JZf28Pqtbk",
+      authDomain: "sga-treinamento-goias.firebaseapp.com",
+      projectId: "sga-treinamento-goias",
+      storageBucket: "sga-treinamento-goias.firebasestorage.app",
+      messagingSenderId: "1072216886470",
+      appId: "1:1072216886470:web:0788e8f46a234189c19bc7",
+    };
+
+    const appId = firebaseConfig.projectId;
+
+    let app, db, auth, userId;
+    let currentMatricula = localStorage.getItem("currentMatricula") || null;
+
+    // só para ver logs do Firestore no console
+    setLogLevel("debug");
+
+    const ATTENTION_DAYS = 30;
+    let complianceChartInstance = null;
+    let TREINAMENTOS = [];
+
+    // ---------- helpers de coleção ----------
+    function getRegistrosCollection() {
+      return collection(
+        db,
+        `/artifacts/${appId}/public/data/registros_conformidade`
+      );
+    }
+
+    function getTreinamentosCollection() {
+      return collection(
+        db,
+        `/artifacts/${appId}/public/data/catalogo_treinamentos`
+      );
+    }
+
+    // ---------- cálculo de status ----------
+    function calcularStatus(dataValidade) {
+      if (!dataValidade || isNaN(new Date(dataValidade))) return "Pendente";
+
+      const hoje = new Date();
+      const validade = new Date(dataValidade);
+      const hojeZero = new Date(
+        hoje.getFullYear(),
+        hoje.getMonth(),
+        hoje.getDate()
+      );
+      const validadeZero = new Date(
+        validade.getFullYear(),
+        validade.getMonth(),
+        validade.getDate()
+      );
+
+      const diffTime = validadeZero.getTime() - hojeZero.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays <= 0) return "Vencido";
+      // AJUSTE: só vira "Atenção" quando faltar MENOS que ATTENTION_DAYS
+      if (diffDays < ATTENTION_DAYS) return "Atenção";
+      return "Em Dia";
+    }
+
+    // ---------- registrar conclusão ----------
+    async function registrarConclusao(matricula, treinamentoId) {
+      if (!db) throw new Error("Firebase não inicializado.");
+
+      const treinamento = TREINAMENTOS.find((t) => t.id === treinamentoId);
+      if (!treinamento)
+        throw new Error("Treinamento não encontrado no catálogo.");
+
+      const periodicidadeDias = Number(treinamento.periodicidade) || 0;
+      const dataConclusao = new Date();
+      const validadeMillis = periodicidadeDias * 24 * 60 * 60 * 1000;
+      const dataValidade =
+        validadeMillis > 0
+          ? new Date(dataConclusao.getTime() + validadeMillis)
+          : dataConclusao;
+
+      const docId = `${matricula}_${treinamentoId}`;
+
+      const novoRegistro = {
+        matricula,
+        treinamentoId,
+        dataConclusao: serverTimestamp(),
+        dataValidade: dataValidade.toISOString(),
+        periodicidadeDias,
+      };
+
+      try {
+        await setDoc(doc(getRegistrosCollection(), docId), novoRegistro);
+        return `Conclusão registrada com sucesso! Próxima validade: ${dataValidade.toLocaleDateString(
+          "pt-BR"
+        )}.`;
+      } catch (error) {
+        console.error("Erro ao registrar conclusão:", error);
+        throw new Error(
+          "Falha ao salvar o registro. Veja regras do Firestore. Erro: " +
+            error.code
+        );
+      }
+    }
+
+    // ---------- modal genérico ----------
+    function showModal(title, body) {
+      document.getElementById("modal-title").textContent = title;
+      document.getElementById("modal-body").innerHTML = body;
+      document.getElementById("message-modal").classList.remove("hidden");
+    }
+
+    // ---------- painel funcionário ----------
+    function renderFuncionarioPanel(registros) {
+      const container = document.getElementById("training-list");
+      container.innerHTML = "";
+      document
+        .getElementById("loading-funcionario")
+        .classList.add("hidden");
+
+      const dataMap = registros.reduce((acc, reg) => {
+        acc[reg.treinamentoId] = reg;
+        return acc;
+      }, {});
+
+      TREINAMENTOS.forEach((treinamento) => {
+        const registro = dataMap[treinamento.id] || null;
+        const dataValidade = registro
+          ? new Date(registro.dataValidade)
+          : null;
+        const status = calcularStatus(dataValidade);
+
+        let colorClass, statusText, actionEnabled;
+        if (status === "Em Dia") {
+          colorClass = "bg-status-em_dia";
+          statusText = dataValidade
+            ? `Válido até: ${dataValidade.toLocaleDateString("pt-BR")}`
+            : "Em dia";
+          actionEnabled = false;
+        } else if (status === "Atenção") {
+          colorClass = "bg-status-atencao";
+          statusText = dataValidade
+            ? `ATENÇÃO! Vence em: ${dataValidade.toLocaleDateString("pt-BR")}`
+            : "Vence em breve";
+          actionEnabled = true;
+        } else if (status === "Vencido") {
+          colorClass = "bg-status-vencido";
+          statusText = dataValidade
+            ? `VENCIDO desde: ${dataValidade.toLocaleDateString("pt-BR")}`
+            : "VENCIDO";
+          actionEnabled = true;
+        } else {
+          colorClass = "bg-status-vencido";
+          statusText = "Pendente de Conclusão";
+          actionEnabled = true;
+        }
+
+        const validadeText = dataValidade
+          ? dataValidade.toLocaleDateString("pt-BR")
+          : "N/A";
+
+        const card = `
+          <div class="card p-5 bg-white rounded-xl shadow-lg border-l-4 ${colorClass.replace(
+            "bg-",
+            "border-"
+          )}">
+            <h4 class="text-lg font-semibold text-gray-800 mb-2">${
+              treinamento.titulo
+            }</h4>
+            <p class="text-sm text-gray-600">Periodicidade: ${
+              treinamento.periodicidade || 0
+            } dias</p>
+            <p class="text-sm text-gray-600">Relevância: ${
+              treinamento.relevancia_goias || "-"
+            }</p>
+            <p class="text-sm font-semibold mt-2 text-gray-700">Validade: ${validadeText}</p>
+            <span class="inline-block px-3 py-1 mt-2 text-xs font-semibold text-white rounded-full ${colorClass}">${statusText}</span>
+            ${
+              actionEnabled
+                ? `<button data-treinamento-id="${
+                    treinamento.id
+                  }" class="btn-concluir w-full mt-4 bg-blue-700 text-white p-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors">
+                     Confirmar Conclusão
+                   </button>`
+                : `<button disabled class="w-full mt-4 bg-gray-300 text-gray-600 p-2 rounded-lg text-sm font-medium">
+                     Em Dia
+                   </button>`
+            }
+          </div>
+        `;
+        container.innerHTML += card;
+      });
+
+      document.querySelectorAll(".btn-concluir").forEach((button) => {
+        button.onclick = async (e) => {
+          const id = e.target.getAttribute("data-treinamento-id");
+          e.target.disabled = true;
+          e.target.textContent = "Registrando...";
+          try {
+            const message = await registrarConclusao(currentMatricula, id);
+            showModal("Registro de Conclusão", message);
+          } catch (error) {
+            showModal("Erro no Registro", error.message);
+          } finally {
+            e.target.disabled = false;
+            e.target.textContent = "Confirmar Conclusão";
+          }
+        };
+      });
+    }
+
+    // ---------- painel gestor ----------
+    function renderGestorPanel(todosRegistros) {
+      const tableBody = document.getElementById("gestor-table-body");
+      tableBody.innerHTML = "";
+      document.getElementById("loading-gestor").classList.add("hidden");
+
+      const statusCounts = {
+        "Em Dia": 0,
+        Atenção: 0,
+        Vencido: 0,
+        Pendente: 0,
+      };
+
+      todosRegistros.forEach((reg) => {
+        const dataValidade = new Date(reg.dataValidade);
+        const status = calcularStatus(dataValidade);
+        if (statusCounts.hasOwnProperty(status)) statusCounts[status]++;
+
+        let colorClass;
+        if (status === "Em Dia") colorClass = "bg-status-em_dia";
+        else if (status === "Atenção") colorClass = "bg-status-atencao";
+        else colorClass = "bg-status-vencido";
+
+        const treinamento =
+          TREINAMENTOS.find((t) => t.id === reg.treinamentoId)?.titulo ||
+          "Desconhecido";
+        const dataConcText = reg.dataConclusao?.toDate
+          ? reg.dataConclusao.toDate().toLocaleDateString("pt-BR")
+          : "N/A";
+
+        const row = `
+          <tr>
+            <td class="p-4 text-gray-600">${reg.matricula}</td>
+            <td class="p-4 text-gray-600">${treinamento}</td>
+            <td class="p-4 text-gray-600">${dataConcText}</td>
+            <td class="p-4 text-gray-600">${dataValidade.toLocaleDateString(
+              "pt-BR"
+            )}</td>
+            <td class="p-4 text-center">
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-white ${colorClass}">
+                ${status}
+              </span>
+            </td>
+          </tr>
+        `;
+        tableBody.innerHTML += row;
+      });
+
+      document.getElementById("stat-em_dia").textContent =
+        statusCounts["Em Dia"];
+      document.getElementById("stat-atencao").textContent =
+        statusCounts["Atenção"];
+      document.getElementById("stat-vencido").textContent =
+        statusCounts["Vencido"] + statusCounts["Pendente"];
+
+      renderComplianceChart(statusCounts);
+    }
+
+    function renderComplianceChart(stats) {
+      const ctx = document
+        .getElementById("complianceChart")
+        .getContext("2d");
+      if (complianceChartInstance) complianceChartInstance.destroy();
+
+      complianceChartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Em Dia", "Vence em poucos dias", "Risco/Vencido"],
+          datasets: [
+            {
+              data: [
+                stats["Em Dia"],
+                stats["Atenção"],
+                stats["Vencido"] + stats["Pendente"],
+              ],
+              backgroundColor: ["#10B981", "#F59E0B", "#EF4444"],
+              borderColor: "#FFFFFF",
+              borderWidth: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "70%",
+          plugins: {
+            legend: {
+              position: "bottom",
+            },
+          },
+        },
+      });
+    }
+
+    // ---------- gerenciar catálogo de treinamentos ----------
+    function setupTreinamentosListener() {
+      if (!db) return;
+      onSnapshot(
+        getTreinamentosCollection(),
+        (snapshot) => {
+          TREINAMENTOS = snapshot.docs.map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data(),
+          }));
+          console.log("Catálogo atualizado:", TREINAMENTOS);
+
+          const manageModal = document.getElementById("manage-modal");
+          if (manageModal && !manageModal.classList.contains("hidden")) {
+            renderManageList();
+          }
+        },
+        (error) => {
+          console.error("Erro catálogo:", error);
+        }
+      );
+    }
+
+    function renderManageList() {
+      const listContainer = document.getElementById("manage-list");
+      if (!listContainer) return;
+      listContainer.innerHTML = "";
+
+      if (TREINAMENTOS.length === 0) {
+        listContainer.innerHTML =
+          '<p class="text-sm text-gray-500">Nenhum treinamento cadastrado ainda.</p>';
+        return;
+      }
+
+      TREINAMENTOS.forEach((t) => {
+        listContainer.innerHTML += `
+          <div class="flex justify-between items-center p-3 bg-gray-100 rounded">
+            <div>
+              <span class="font-medium">${t.titulo}</span>
+              <span class="text-sm text-gray-500 ml-2">(${t.periodicidade ||
+                0} dias)</span>
+              <div class="text-xs text-gray-500">
+                Público-alvo: ${t.publico_alvo || "-"} | Relevância: ${
+          t.relevancia_goias || "-"
+        }
+              </div>
+            </div>
+            <button
+              class="btn-excluir-treinamento text-red-600 text-sm font-semibold hover:underline"
+              data-id="${t.id}"
+            >
+              Excluir
+            </button>
+          </div>
+        `;
+      });
+
+      document
+        .querySelectorAll(".btn-excluir-treinamento")
+        .forEach((btn) => {
+          btn.addEventListener("click", async (e) => {
+            const id = e.target.getAttribute("data-id");
+            if (!id) return;
+            if (!confirm("Tem certeza que deseja excluir este treinamento?"))
+              return;
+            try {
+              await deleteDoc(doc(getTreinamentosCollection(), id));
+            } catch (error) {
+              console.error("Erro ao excluir:", error);
+              showModal("Erro", "Não foi possível excluir o treinamento.");
+            }
+          });
+        });
+    }
+
+    // ---------- Firebase: init + login ----------
+    async function initializeFirebase() {
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
+
+      setupTreinamentosListener();
+
+      try {
+        // login anônimo
+        await signInAnonymously(auth);
+      } catch (e) {
+        console.error("Erro ao logar anonimamente:", e);
+      }
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          userId = user.uid;
+          console.log("Auth OK:", userId);
+          if (currentMatricula) {
+            handleLogin(currentMatricula, true);
+          } else {
+            document
+              .getElementById("login-screen")
+              .classList.remove("hidden");
+          }
+        } else {
+          console.log("Sem usuário autenticado");
+          document
+            .getElementById("login-screen")
+            .classList.remove("hidden");
+        }
+      });
+    }
+
+    function setupFirestoreListeners(panel) {
+      if (!db || !userId) return;
+
+      if (panel === "funcionario") {
+        const q = query(
+          getRegistrosCollection(),
+          where("matricula", "==", currentMatricula)
+        );
+        onSnapshot(
+          q,
+          (snapshot) => {
+            const registros = snapshot.docs.map((doc) => doc.data());
+            renderFuncionarioPanel(registros);
+          },
+          (error) => {
+            console.error("Erro listener funcionário:", error);
+            showModal(
+              "Erro de Conexão",
+              "Não foi possível carregar seus registros."
+            );
+          }
+        );
+      } else if (panel === "gestor") {
+        const q = query(getRegistrosCollection());
+        onSnapshot(
+          q,
+          (snapshot) => {
+            const todosRegistros = snapshot.docs.map((doc) => doc.data());
+            renderGestorPanel(todosRegistros);
+          },
+          (error) => {
+            console.error("Erro listener gestor:", error);
+            showModal(
+              "Erro de Conexão",
+              "Não foi possível carregar os indicadores da equipe."
+            );
+          }
+        );
+      }
+    }
+
+    function handleLogin(matricula, isSessionResume = false) {
+      matricula = (matricula || "").toUpperCase().trim();
+      if (!matricula) {
+        showModal("Erro de Login", "Por favor, insira sua matrícula.");
+        return;
+      }
+
+      currentMatricula = matricula;
+      localStorage.setItem("currentMatricula", currentMatricula);
+
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app-container").classList.remove("hidden");
+      document.getElementById(
+        "userIdDisplay"
+      ).textContent = `Matrícula: ${currentMatricula}`;
+
+      const painel = currentMatricula === "GESTOR" ? "gestor" : "funcionario";
+
+      if (!isSessionResume) {
+        setupFirestoreListeners(painel);
+      }
+      showPanel(painel);
+    }
+
+    function showPanel(panel) {
+      const isGestor = panel === "gestor";
+
+      if (isGestor && currentMatricula !== "GESTOR") {
+        showModal(
+          "Acesso Negado",
+          "Você não tem permissão para acessar o Painel do Gestor."
+        );
+        showPanel("funcionario");
+        return;
+      }
+
+      document
+        .getElementById("content-gestor")
+        .classList.toggle("hidden", !isGestor);
+      document
+        .getElementById("content-funcionario")
+        .classList.toggle("hidden", isGestor);
+
+      document
+        .getElementById("tab-gestor")
+        .classList.toggle("active-tab", isGestor);
+      document
+        .getElementById("tab-funcionario")
+        .classList.toggle("active-tab", !isGestor);
+
+      setupFirestoreListeners(panel);
+    }
+
+    // ---------- eventos da página ----------
+    document.addEventListener("DOMContentLoaded", () => {
+      initializeFirebase();
+
+      document
+        .getElementById("login-button")
+        .addEventListener("click", () => {
+          const matricula =
+            document.getElementById("matricula-input").value;
+          handleLogin(matricula);
+        });
+
+      document
+        .getElementById("matricula-input")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            document.getElementById("login-button").click();
+          }
+        });
+
+      document
+        .getElementById("tab-gestor")
+        .addEventListener("click", () => showPanel("gestor"));
+      document
+        .getElementById("tab-funcionario")
+        .addEventListener("click", () => showPanel("funcionario"));
+
+      document
+        .getElementById("modal-close-button")
+        .addEventListener("click", () => {
+          document.getElementById("message-modal").classList.add("hidden");
+        });
+
+      document
+        .getElementById("logout-button")
+        .addEventListener("click", () => {
+          currentMatricula = null;
+          localStorage.removeItem("currentMatricula");
+          document.getElementById("matricula-input").value = "";
+          document.getElementById("app-container").classList.add("hidden");
+          document.getElementById("login-screen").classList.remove("hidden");
+        });
+
+      document
+        .getElementById("open-manage-modal-btn")
+        .addEventListener("click", () => {
+          renderManageList();
+          document.getElementById("manage-modal").classList.remove("hidden");
+        });
+
+      document
+        .getElementById("close-manage-modal-btn")
+        .addEventListener("click", () => {
+          document.getElementById("manage-modal").classList.add("hidden");
+        });
+
+      document
+        .getElementById("btn-adicionar-treinamento")
+        .addEventListener("click", async () => {
+          const tituloInput = document.getElementById(
+            "novo-treinamento-titulo"
+          );
+          const periodicidadeInput = document.getElementById(
+            "novo-treinamento-periodicidade"
+          );
+          const publicoInput = document.getElementById(
+            "novo-treinamento-publico"
+          );
+          const relevanciaInput = document.getElementById(
+            "novo-treinamento-relevancia"
+          );
+
+          const titulo = tituloInput.value.trim();
+          const periodicidade = Number(periodicidadeInput.value);
+          const publico_alvo = publicoInput.value.trim() || "todos";
+          const relevancia_goias = relevanciaInput.value.trim() || "";
+
+          if (!titulo || !periodicidade) {
+            alert("Preencha pelo menos o título e a periodicidade (dias).");
+            return;
+          }
+
+          try {
+            await addDoc(getTreinamentosCollection(), {
+              titulo,
+              periodicidade,
+              publico_alvo,
+              relevancia_goias,
+            });
+
+            tituloInput.value = "";
+            periodicidadeInput.value = "";
+            publicoInput.value = "";
+            relevanciaInput.value = "";
+          } catch (error) {
+            console.error("Erro ao adicionar treinamento:", error);
+            showModal(
+              "Erro",
+              "Não foi possível adicionar o treinamento (veja console)."
+            );
+          }
+        });
+    });
+  </script>
+</body>
+</html>
