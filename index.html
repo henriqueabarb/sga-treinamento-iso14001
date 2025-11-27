@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGA - Registro de Competência ISO 14001</title>
+    <!-- Carregamento do Tailwind CSS para estilo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'iso-success': '#10B981', // Verde
+                        'iso-warning': '#F59E0B', // Amarelo/Atenção
+                        'iso-danger': '#EF4444', // Vermelho/Vencido
+                        'iso-neutral': '#6B7280', // Cinza/Pendente
+                        'app-bg': '#F9FAFB',
+                        'app-primary': '#1F2937',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Configurações e Estilos -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        .status-em-dia { background-color: #10B981; }
+        .status-atencao { background-color: #F59E0B; }
+        .status-vencido { background-color: #EF4444; }
+        .status-pendente { background-color: #6B7280; }
+        /* Estilo para a matícula do usuário atual (Importante para multi-usuário) */
+        #userIdDisplay { word-break: break-all; font-size: 0.75rem; color: #6B7280; }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div id="login-screen" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl transition-opacity duration-500">
+        <h1 class="text-2xl font-bold text-app-primary mb-4 text-center">Login SGA</h1>
+        <p class="text-gray-600 mb-6 text-center">Insira sua matrícula para acessar o painel de competência.</p>
+        <input type="text" id="matricula-input" placeholder="Ex: 12345 (Funcionário) ou GESTOR" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-iso-success focus:border-iso-success">
+        <button id="login-button" class="w-full bg-app-primary text-white p-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors">Acessar Sistema</button>
+        <p class="mt-4 text-sm text-gray-500 text-center">Use 'GESTOR' para o painel de indicadores.</p>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-app-primary">Gestão de Competência ISO 14001</h1>
+            <p id="userIdDisplay" class="mt-1 text-xs">Matrícula Atual: N/A</p>
+        </header>
+
+        <!-- Navegação (Tabs) -->
+        <div class="flex border-b border-gray-200 mb-6">
+            <button id="tab-gestor" class="py-2 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-app-primary hover:border-app-primary transition-colors">Painel do Gestor</button>
+            <button id="tab-funcionario" class="py-2 px-4 text-sm font-medium border-b-2 border-app-primary text-app-primary transition-colors">Painel do Funcionário</button>
+        </div>
+
+        <!-- Conteúdo do Painel do Funcionário -->
+        <section id="panel-funcionario" class="space-y-6">
+            <h2 class="text-xl font-semibold text-app-primary">Meus Treinamentos Obrigatórios</h2>
+            <div id="loading-funcionario" class="text-center text-gray-500">Carregando dados de conformidade...</div>
+            <div id="funcionario-list" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Cards de Treinamento serão injetados aqui -->
+            </div>
+            
+            <!-- Modal de Mensagem (para substituir o alert) -->
+            <div id="message-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                    <div class="mt-3 text-center">
+                        <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900">Mensagem do Sistema</h3>
+                        <div class="mt-2 px-7 py-3">
+                            <p id="modal-body" class="text-sm text-gray-500">...</p>
+                        </div>
+                        <div class="items-center px-4 py-3">
+                            <button id="modal-close-button" class="px-4 py-2 bg-app-primary text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-app-primary">
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Conteúdo do Painel do Gestor (Hidden por default) -->
+        <section id="panel-gestor" class="hidden space-y-8">
+            <h2 class="text-xl font-semibold text-app-primary">Indicadores de Conformidade</h2>
+
+            <!-- Cartões de Indicadores -->
+            <div class="grid gap-6 sm:grid-cols-3">
+                <div id="card-em-dia" class="card p-5 bg-iso-success text-white rounded-lg">
+                    <p class="text-sm font-medium">Em Dia</p>
+                    <p id="count-em-dia" class="text-3xl font-bold mt-1">0</p>
+                </div>
+                <div id="card-atencao" class="card p-5 bg-iso-warning text-white rounded-lg">
+                    <p class="text-sm font-medium">Em Atenção</p>
+                    <p id="count-atencao" class="text-3xl font-bold mt-1">0</p>
+                </div>
+                <div id="card-vencido" class="card p-5 bg-iso-danger text-white rounded-lg">
+                    <p class="text-sm font-medium">Vencido/Pendente</p>
+                    <p id="count-vencido" class="text-3xl font-bold mt-1">0</p>
+                </div>
+            </div>
+
+            <!-- Tabela de Rastreabilidade Completa -->
+            <div>
+                <h3 class="text-lg font-semibold mb-3 text-app-primary">Rastreabilidade da Equipe</h3>
+                <div id="loading-gestor" class="text-center text-gray-500">Carregando rastreabilidade da equipe...</div>
+                <div class="bg-white rounded-lg shadow-md overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matrícula</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Treinamento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Conclusão</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validade</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gestor-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Linhas da tabela serão injetadas aqui -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Firebase Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, onSnapshot, collection, query, where, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais para Firebase (Obrigatório para o ambiente Canvas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Variáveis globais
+        let app, db, auth, userId;
+        let currentMatricula = localStorage.getItem('currentMatricula') || null;
+        setLogLevel('Debug'); // Habilita logs para depuração
+
+        // --- DADOS MOCK (Simulando o Banco de Dados) ---
+        // O backend Java original agora é a lógica JavaScript que usa o Firestore.
+        const TREINAMENTOS = [
+            { id: 'T101', titulo: 'Aspectos e Impactos Ambientais (ISO 14001)', periodicidade: 365, relevancia: 'ISO, Legal' },
+            { id: 'T102', titulo: 'Gerenciamento de Resíduos Sólidos', periodicidade: 180, relevancia: 'Legal, Operacional' },
+            { id: 'T103', titulo: 'Uso Racional da Água', periodicidade: 540, relevancia: 'ISO, Operacional' },
+        ];
+
+        // --- FUNÇÕES DE CONFORMIDADE E LÓGICA DE NEGÓCIO (Simulação do Service Java) ---
+
+        /**
+         * Calcula o status de conformidade baseado na data de validade.
+         * Esta é a lógica de negócio central (antigo ConformidadeService.java).
+         * @param {Date | null} dataValidade Data de expiração do treinamento.
+         * @returns {string} Status ('Em Dia', 'Atenção', 'Vencido', 'Pendente').
+         */
+        function calcularStatus(dataValidade) {
+            if (!dataValidade) return 'Pendente'; // Nunca concluído
+
+            const hoje = new Date();
+            const validade = new Date(dataValidade);
+            const diffTime = validade.getTime() - hoje.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 0) return 'Vencido'; // Data expirou
+            if (diffDays <= 30) return 'Atenção'; // 30 dias de aviso
+            return 'Em Dia';
+        }
+
+        /**
+         * Gera o caminho da coleção no Firestore para os registros de conformidade.
+         * IMPORTANTE: Esta coleção é pública (shared/auditable) para a aplicação.
+         */
+        function getRegistrosCollection() {
+            return collection(db, `/artifacts/${appId}/public/data/registros_conformidade`);
+        }
+
+        // --- FUNÇÕES DE PERSISTÊNCIA (Simulação do Repository/Controller Java) ---
+
+        /**
+         * Registra a conclusão de um treinamento (POST /api/registro).
+         * @param {string} matricula Matrícula do funcionário.
+         * @param {string} treinamentoId ID do treinamento concluído.
+         */
+        async function registrarConclusao(matricula, treinamentoId) {
+            const treinamento = TREINAMENTOS.find(t => t.id === treinamentoId);
+            if (!treinamento) throw new Error("Treinamento não encontrado.");
+
+            const dataConclusao = new Date();
+            const validadeMillis = treinamento.periodicidade * 24 * 60 * 60 * 1000;
+            const dataValidade = new Date(dataConclusao.getTime() + validadeMillis);
+
+            const novoRegistro = {
+                matricula: matricula,
+                treinamentoId: treinamentoId,
+                dataConclusao: serverTimestamp(), // Firestore Timestamp
+                dataValidade: dataValidade.toISOString(), // Salva como string ISO
+                periodicidadeDias: treinamento.periodicidade,
+                nomeFuncionario: matricula === 'GESTOR' ? 'Gestor Ambiental' : 'Funcionário ' + matricula
+            };
+
+            try {
+                // Tenta atualizar um registro existente (upsert)
+                const docRef = doc(getRegistrosCollection(), `${matricula}_${treinamentoId}`);
+                await setDoc(docRef, novoRegistro);
+                return `Conclusão registrada com sucesso! Próxima validade: ${new Date(dataValidade).toLocaleDateString('pt-BR')}.`;
+            } catch (error) {
+                console.error("Erro ao registrar conclusão no Firestore:", error);
+                throw new Error("Falha ao salvar o registro no banco de dados.");
+            }
+        }
+
+        /**
+         * Busca o registro mais recente de um treinamento para um funcionário.
+         * @param {string} matricula
+         * @param {string} treinamentoId
+         * @returns {Object | null} Registro do Firestore ou null.
+         */
+        async function buscarRegistro(matricula, treinamentoId) {
+            const docRef = doc(getRegistrosCollection(), `${matricula}_${treinamentoId}`);
+            const docSnap = await getDoc(docRef);
+            return docSnap.exists() ? docSnap.data() : null;
+        }
+
+        // --- FUNÇÕES DE INTERFACE (Rendering) ---
+
+        /**
+         * Exibe uma mensagem modal na tela.
+         * @param {string} title Título da modal.
+         * @param {string} body Corpo da mensagem.
+         * @param {string} status 'success', 'error', 'info'.
+         */
+        function showModal(title, body) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = body;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        /**
+         * Renderiza os cards de treinamento para o painel do funcionário.
+         * @param {Array<Object>} registros Registros de treinamento do funcionário.
+         */
+        function renderFuncionarioPanel(registros) {
+            const container = document.getElementById('funcionario-list');
+            container.innerHTML = '';
+            document.getElementById('loading-funcionario').classList.add('hidden');
+            const dataMap = registros.reduce((acc, reg) => {
+                acc[reg.treinamentoId] = reg;
+                return acc;
+            }, {});
+
+            TREINAMENTOS.forEach(treinamento => {
+                const registro = dataMap[treinamento.id] || null;
+                const dataValidade = registro ? new Date(registro.dataValidade) : null;
+                const status = calcularStatus(dataValidade);
+
+                let colorClass, statusText;
+                if (status === 'Em Dia') { colorClass = 'bg-iso-success'; statusText = 'Em Dia'; }
+                else if (status === 'Atenção') { colorClass = 'bg-iso-warning'; statusText = 'Atenção (Renovar)'; }
+                else if (status === 'Vencido') { colorClass = 'bg-iso-danger'; statusText = 'Vencido (Urgente)'; }
+                else { colorClass = 'bg-iso-neutral'; statusText = 'Pendente'; }
+
+                const card = `
+                    <div class="card p-5 bg-white rounded-xl shadow-lg border-l-4 ${colorClass.replace('bg-', 'border-')}">
+                        <h4 class="text-lg font-semibold text-app-primary mb-2">${treinamento.titulo}</h4>
+                        <p class="text-sm text-gray-600">Periodicidade: ${treinamento.periodicidade} dias</p>
+                        <p class="text-sm text-gray-600">Validade: ${dataValidade ? dataValidade.toLocaleDateString('pt-BR') : 'N/A'}</p>
+                        <span class="inline-block px-3 py-1 mt-2 text-xs font-semibold text-white rounded-full ${colorClass}">${statusText}</span>
+                        <button data-treinamento-id="${treinamento.id}" 
+                                class="btn-concluir w-full mt-4 bg-app-primary text-white p-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors">
+                            Confirmar Conclusão Agora
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+
+            // Adiciona evento de clique para os botões de concluir
+            document.querySelectorAll('.btn-concluir').forEach(button => {
+                button.onclick = async (e) => {
+                    const id = e.target.getAttribute('data-treinamento-id');
+                    e.target.disabled = true;
+                    e.target.textContent = 'Registrando...';
+                    try {
+                        const message = await registrarConclusao(currentMatricula, id);
+                        showModal("Registro de Conclusão", message);
+                    } catch (error) {
+                        showModal("Erro no Registro", error.message);
+                    } finally {
+                        e.target.disabled = false;
+                        e.target.textContent = 'Confirmar Conclusão Agora';
+                    }
+                };
+            });
+        }
+
+        /**
+         * Renderiza a tabela e os indicadores do painel do gestor.
+         * @param {Array<Object>} todosRegistros Todos os registros de conformidade.
+         */
+        function renderGestorPanel(todosRegistros) {
+            const tableBody = document.getElementById('gestor-table-body');
+            tableBody.innerHTML = '';
+            document.getElementById('loading-gestor').classList.add('hidden');
+
+            const statusCounts = { 'Em Dia': 0, 'Atenção': 0, 'Vencido': 0, 'Pendente': 0 };
+            const statusMap = new Map(); // Para rastrear o pior status por matrícula
+
+            // Agrupa os registros para encontrar o pior status por funcionário
+            todosRegistros.forEach(reg => {
+                const dataValidade = new Date(reg.dataValidade);
+                const status = calcularStatus(dataValidade);
+                const key = `${reg.matricula}_${reg.treinamentoId}`;
+
+                const rowData = {
+                    matricula: reg.matricula,
+                    treinamento: TREINAMENTOS.find(t => t.id === reg.treinamentoId)?.titulo || 'Desconhecido',
+                    conclusao: reg.dataConclusao?.toDate()?.toLocaleDateString('pt-BR') || 'N/A',
+                    validade: dataValidade.toLocaleDateString('pt-BR'),
+                    status: status
+                };
+
+                // Lógica de Pior Status (Simplificada: apenas o último status para o Dashboard)
+                // Para o dashboard, contamos o status por registro para simplificar o indicador de risco.
+                if (statusCounts.hasOwnProperty(status)) {
+                    statusCounts[status]++;
+                } else if (status === 'Pendente') {
+                    statusCounts['Vencido']++; // Conta pendente como risco de vencido para o indicador
+                }
+
+                // Renderiza linha da tabela de rastreabilidade completa
+                let colorClass;
+                if (status === 'Em Dia') { colorClass = 'bg-iso-success'; }
+                else if (status === 'Atenção') { colorClass = 'bg-iso-warning'; }
+                else if (status === 'Vencido') { colorClass = 'bg-iso-danger'; }
+                else { colorClass = 'bg-iso-neutral'; }
+
+                const row = `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${reg.matricula}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${rowData.treinamento}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${rowData.conclusao}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${rowData.validade}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-white ${colorClass}">
+                                ${status}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+            
+            // Atualiza Cartões de Indicadores
+            document.getElementById('count-em-dia').textContent = statusCounts['Em Dia'];
+            document.getElementById('count-atencao').textContent = statusCounts['Atenção'];
+            document.getElementById('count-vencido').textContent = statusCounts['Vencido'] + statusCounts['Pendente']; // Vencido + Pendente = Risco Total
+        }
+
+        // --- FUNÇÕES DE SETUP E AUTENTICAÇÃO ---
+
+        /**
+         * Inicializa o Firebase e a Autenticação.
+         */
+        async function initializeFirebase() {
+            try {
+                if (!firebaseConfig.apiKey) {
+                    throw new Error("A configuração do Firebase não está disponível (sem apiKey).");
+                }
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Autenticação: Garante que o usuário esteja autenticado para acessar o Firestore
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Usuário Firebase autenticado:", userId);
+                        // A interface é carregada via handleLogin
+                    } else {
+                        console.log("Usuário deslogado ou anônimo.");
+                    }
+                });
+
+            } catch (error) {
+                console.error("Erro na inicialização ou autenticação do Firebase:", error);
+                showModal("Erro Crítico", "Falha ao iniciar o banco de dados em nuvem. Verifique sua conexão e configurações.");
+            }
+        }
+
+        /**
+         * Lida com o fluxo de login e carrega a interface correta.
+         */
+        function handleLogin(matricula) {
+            currentMatricula = matricula.toUpperCase().trim();
+            if (!currentMatricula) {
+                showModal("Erro de Login", "Por favor, insira sua matrícula.");
+                return;
+            }
+
+            localStorage.setItem('currentMatricula', currentMatricula);
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            document.getElementById('userIdDisplay').textContent = `Matrícula Atual: ${currentMatricula} (Firebase UID: ${userId})`;
+
+            // Decide qual painel mostrar
+            if (currentMatricula === 'GESTOR') {
+                showPanel('gestor');
+                setupFirestoreListeners('gestor');
+            } else {
+                showPanel('funcionario');
+                setupFirestoreListeners('funcionario');
+            }
+        }
+        
+        /**
+         * Configura o listener em tempo real (onSnapshot) do Firestore.
+         */
+        function setupFirestoreListeners(panel) {
+            if (!db || !userId) return; // Garante que o Firebase está pronto
+
+            if (panel === 'funcionario') {
+                const q = query(getRegistrosCollection(), where("matricula", "==", currentMatricula));
+                onSnapshot(q, (snapshot) => {
+                    const registros = snapshot.docs.map(doc => doc.data());
+                    renderFuncionarioPanel(registros);
+                }, (error) => {
+                    console.error("Erro no listener do Funcionário:", error);
+                    showModal("Erro de Conexão", "Não foi possível carregar seus registros de treinamento.");
+                });
+            } else if (panel === 'gestor') {
+                // Para o gestor, busca *todos* os registros (POST /api/indicadores/geral)
+                const q = query(getRegistrosCollection());
+                onSnapshot(q, (snapshot) => {
+                    const todosRegistros = snapshot.docs.map(doc => doc.data());
+                    renderGestorPanel(todosRegistros);
+                }, (error) => {
+                    console.error("Erro no listener do Gestor:", error);
+                    showModal("Erro de Conexão", "Não foi possível carregar os indicadores da equipe.");
+                });
+            }
+        }
+
+        /**
+         * Alterna entre os painéis Gestor e Funcionário.
+         */
+        function showPanel(panel) {
+            const isGestor = panel === 'gestor';
+            document.getElementById('panel-gestor').classList.toggle('hidden', !isGestor);
+            document.getElementById('panel-funcionario').classList.toggle('hidden', isGestor);
+            
+            document.getElementById('tab-gestor').classList.toggle('text-app-primary', isGestor);
+            document.getElementById('tab-gestor').classList.toggle('border-app-primary', isGestor);
+            document.getElementById('tab-gestor').classList.toggle('text-gray-500', !isGestor);
+            document.getElementById('tab-gestor').classList.toggle('border-transparent', !isGestor);
+
+            document.getElementById('tab-funcionario').classList.toggle('text-app-primary', !isGestor);
+            document.getElementById('tab-funcionario').classList.toggle('border-app-primary', !isGestor);
+            document.getElementById('tab-funcionario').classList.toggle('text-gray-500', isGestor);
+            document.getElementById('tab-funcionario').classList.toggle('border-transparent', isGestor);
+        }
+
+        // --- Event Listeners Globais ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase(); // Inicia o Firebase
+            
+            // Login Screen
+            document.getElementById('login-button').addEventListener('click', () => {
+                const matricula = document.getElementById('matricula-input').value;
+                handleLogin(matricula);
+            });
+            document.getElementById('matricula-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('login-button').click();
+                }
+            });
+
+            // Resume Session
+            if (currentMatricula) {
+                document.getElementById('matricula-input').value = currentMatricula;
+                handleLogin(currentMatricula);
+            }
+
+            // Tabs
+            document.getElementById('tab-gestor').addEventListener('click', () => showPanel('gestor'));
+            document.getElementById('tab-funcionario').addEventListener('click', () => showPanel('funcionario'));
+
+            // Modal Close
+            document.getElementById('modal-close-button').addEventListener('click', () => {
+                document.getElementById('message-modal').classList.add('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
