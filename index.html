@@ -3,142 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGA - Registro de Competência ISO 14001</title>
-    <!-- Carregamento do Tailwind CSS para estilo -->
+    <title>SGA - Gestão de Treinamentos</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'iso-success': '#10B981', // Verde: Em Dia
-                        'iso-warning': '#F59E0B', // Amarelo: Atenção
-                        'iso-danger': '#EF4444', // Vermelho: Vencido
-                        'iso-neutral': '#6B7280', // Cinza: Pendente
-                        'app-bg': '#F9FAFB',
-                        'app-primary': '#1F2937',
-                    }
-                }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6B7280; 
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        /* Corrigindo cor de aba ativa para azul padrão do código original (1E40AF) */
+        .nav-tab.active-tab {
+            color: #1E40AF; 
+            border-bottom-color: #1E40AF;
+        }
+        .page-content {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
             }
         }
-    </script>
-    <!-- Configurações e Estilos -->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
-        .status-em-dia { background-color: #10B981; }
-        .status-atencao { background-color: #F59E0B; }
-        .status-vencido { background-color: #EF4444; }
-        .status-pendente { background-color: #6B7280; }
-        /* Garante que o container principal da aplicação tenha altura mínima para centralização visual */
-        #app-container { min-height: calc(100vh - 4rem); } 
-        /* Estilo para a matícula do usuário atual (Importante para multi-usuário) */
-        #userIdDisplay { word-break: break-all; font-size: 0.75rem; color: #6B7280; }
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 50;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .bg-status-em_dia { background-color: #10B981; } 
+        .text-status-em_dia { color: #059669; }
+        .bg-status-atencao { background-color: #F59E0B; }
+        .text-status-atencao { color: #D97706; }
+        .bg-status-vencido { background-color: #EF4444; }
+        .text-status-vencido { color: #DC2626; }
     </style>
 </head>
-<body class="p-4 sm:p-8">
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Chosen Palette: Neutros Calmos (Cinza, Azul, com acentos Verde/Amarelo/Vermelho para status) -->
+    <!-- Application Structure Plan: A aplicação é estruturada em torno de duas personas principais identificadas no relatório: "Gestor" e "Funcionário". A navegação por abas (Tabs) permite alternar entre esses dois painéis. O "Painel do Gestor" (visão padrão) usa um layout de dashboard, priorizando o status de conformidade geral (gráfico de rosca) e uma tabela detalhada de funcionários, alinhado ao objetivo de auditoria da ISO 14001. O "Painel do Funcionário" é uma visualização focada em tarefas, listando treinamentos pendentes. Esta estrutura de papéis é a mais intuitiva para as funcionalidades descritas no relatório-fonte. -->
+    <!-- Visualization & Content Choices: 
+        1. Status Geral (Gestor): Report Info -> "Dashboard de Conformidade", "Indicador de Atraso". Goal -> Informar proporção. Viz/Method -> Gráfico de Rosca (Doughnut Chart). Interaction -> Tooltip ao passar o mouse. Justification -> Melhor visualização para proporção (Em Dia, Atenção, Vencido) do total. Library -> Chart.js (Canvas).
+        2. Status por Funcionário (Gestor): Report Info -> "Tabela que lista todos os funcionários e o status". Goal -> Organizar, Informar detalhes. Viz/Method -> Tabela HTML com status codificado por cor. Interaction -> Nenhuma (apenas visual). Justification -> Método padrão e mais claro para dados tabulares. Library -> HTML/Tailwind/JS.
+        3. Lista de Treinamentos (Funcionário): Report Info -> "Exibe a lista de treinamentos pendentes". Goal -> Informar tarefas. Viz/Method -> Lista de Cards (HTML/Tailwind). Interaction -> Click no card abre modal. Justification -> Cards são mais amigáveis ao toque e visualmente claros que uma tabela para uma lista de tarefas. Library -> HTML/Tailwind/JS.
+        4. Simulação de Vídeo (Funcionário): Report Info -> "Simulação de 'Assistir ao Vídeo'". Goal -> Interagir (completar tarefa). Viz/Method -> Modal com texto e botão de confirmação. Interaction -> Click no botão "Confirmar". Justification -> Modal foca a atenção do usuário na tarefa de conclusão. Library -> HTML/Tailwind/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
     <!-- Tela de Login -->
-    <div id="login-screen" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl transition-opacity duration-500">
-        <h1 class="text-2xl font-bold text-app-primary mb-4 text-center">Login SGA</h1>
+    <div id="login-screen" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl mt-12">
+        <h1 class="text-2xl font-bold text-blue-800 mb-4 text-center">Login SGA</h1>
         <p class="text-gray-600 mb-6 text-center">Insira sua matrícula para acessar o painel de competência.</p>
-        <input type="text" id="matricula-input" placeholder="Ex: 12345 (Funcionário) ou GESTOR" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-iso-success focus:border-iso-success">
-        <button id="login-button" class="w-full bg-app-primary text-white p-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors">Acessar Sistema</button>
+        <input type="text" id="matricula-input" placeholder="Ex: 12345 (Funcionário) ou GESTOR" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-blue-800 focus:border-blue-800">
+        <button id="login-button" class="w-full bg-blue-700 text-white p-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">Acessar Sistema</button>
         <p class="mt-4 text-sm text-gray-500 text-center">Use 'GESTOR' para o painel de indicadores.</p>
     </div>
 
     <!-- Container Principal da Aplicação -->
-    <div id="app-container" class="hidden max-w-7xl mx-auto">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-app-primary">Gestão de Competência ISO 14001</h1>
-            <p id="userIdDisplay" class="mt-1 text-xs">Matrícula Atual: N/A</p>
-        </header>
+    <div id="app-container" class="hidden">
+        <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+            <header class="mb-6">
+                <h1 class="text-3xl font-bold text-blue-800">SGA: Gestão de Treinamentos (ISO 14001)</h1>
+                <p class="text-lg text-gray-600 mt-1">Plataforma interativa para registro e conformidade de treinamentos ambientais (Goiás).</p>
+                <!-- Exibe Matrícula e UID do Firebase (para depuração e rastreabilidade) -->
+                <p id="userIdDisplay" class="mt-1 text-sm text-gray-600">Matrícula Atual: N/A</p>
+            </header>
 
-        <!-- Navegação (Tabs) -->
-        <div class="flex border-b border-gray-200 mb-6">
-            <button id="tab-gestor" class="py-2 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-app-primary hover:border-app-primary transition-colors">Painel do Gestor</button>
-            <button id="tab-funcionario" class="py-2 px-4 text-sm font-medium border-b-2 border-app-primary text-app-primary transition-colors">Painel do Funcionário</button>
+            <nav class="flex border-b border-gray-300 mb-6">
+                <button id="tab-gestor" class="nav-tab active-tab">Painel do Gestor</button>
+                <button id="tab-funcionario" class="nav-tab">Painel do Funcionário</button>
+            </nav>
+
+            <main>
+                <!-- ============================== -->
+                <!-- PAINEL DO GESTOR               -->
+                <!-- ============================== -->
+                <div id="content-gestor" class="page-content">
+                    <section id="gestor-dashboard">
+                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard de Conformidade</h2>
+                        <p class="text-gray-600 mb-6">Esta seção apresenta o status geral de conformidade dos treinamentos da equipe. O gráfico de rosca resume a situação atual, enquanto os cartões destacam os números absolutos. A tabela abaixo detalha o status por funcionário.</p>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-lg font-semibold text-center mb-4">Status Geral de Conformidade</h3>
+                                <div class="chart-container">
+                                    <canvas id="complianceChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
+                                    <div class="p-3 rounded-full bg-status-vencido bg-opacity-20">
+                                        <span class="text-2xl text-status-vencido">⚠️</span>
+                                    </div>
+                                    <div>
+                                        <div id="stat-vencido" class="text-3xl font-bold text-status-vencido">0</div>
+                                        <div class="text-sm font-medium text-gray-500">Registros Vencidos</div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
+                                    <div class="p-3 rounded-full bg-status-atencao bg-opacity-20">
+                                        <span class="text-2xl text-status-atencao">🔔</span>
+                                    </div>
+                                    <div>
+                                        <div id="stat-atencao" class="text-3xl font-bold text-status-atencao">0</div>
+                                        <div class="text-sm font-medium text-gray-500">Vence em 30 dias</div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
+                                    <div class="p-3 rounded-full bg-status-em_dia bg-opacity-20">
+                                        <span class="text-2xl text-status-em_dia">✅</span>
+                                    </div>
+                                    <div>
+                                        <div id="stat-em_dia" class="text-3xl font-bold text-status-em_dia">0</div>
+                                        <div class="text-sm font-medium text-gray-500">Registros em Dia</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="gestor-tabela" class="mt-8">
+                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Rastreabilidade da Equipe (Registros)</h2>
+                        <div id="loading-gestor" class="text-center text-gray-500 my-8">Carregando rastreabilidade da equipe...</div>
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full min-w-[600px]">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600">Matrícula</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600">Treinamento</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600">Conclusão</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600">Validade</th>
+                                            <th class="p-4 text-center text-sm font-semibold text-gray-600">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="gestor-table-body" class="divide-y divide-gray-200">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <button id="open-manage-modal-btn" class="mt-6 bg-blue-700 text-white font-medium py-2 px-5 rounded-lg shadow-md hover:bg-blue-800 transition-colors">
+                            Gerenciar Treinamentos (Simulado)
+                        </button>
+                    </section>
+                </div>
+
+                <!-- ============================== -->
+                <!-- PAINEL DO FUNCIONÁRIO          -->
+                <!-- ============================== -->
+                <div id="content-funcionario" class="page-content hidden">
+                    <section id="funcionario-treinamentos">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-semibold text-gray-700">Meus Treinamentos Obrigatórios</h2>
+                        </div>
+                        <p class="text-gray-600 mb-6">Esta é a sua lista de treinamentos ambientais obrigatórios. Clique para confirmar a conclusão e registrar a conformidade. Mantenha seus treinamentos em dia!</p>
+                        
+                        <div id="loading-funcionario" class="text-center text-gray-500 my-8">Carregando dados de conformidade...</div>
+                        <div id="training-list" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        </div>
+                    </section>
+                </div>
+            </main>
         </div>
+    </div>
+    
+    <!-- ============================== -->
+    <!-- MODAIS                         -->
+    <!-- ============================== -->
 
-        <!-- Conteúdo do Painel do Funcionário -->
-        <section id="panel-funcionario" class="space-y-6">
-            <h2 class="text-xl font-semibold text-app-primary">Meus Treinamentos Obrigatórios</h2>
-            <div id="loading-funcionario" class="text-center text-gray-500">Carregando dados de conformidade...</div>
-            <div id="funcionario-list" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <!-- Cards de Treinamento serão injetados aqui -->
-            </div>
-            
-            <!-- Modal de Mensagem (para substituir o alert) -->
-            <div id="message-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                    <div class="mt-3 text-center">
-                        <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900">Mensagem do Sistema</h3>
-                        <div class="mt-2 px-7 py-3">
-                            <p id="modal-body" class="text-sm text-gray-500">...</p>
-                        </div>
-                        <div class="items-center px-4 py-3">
-                            <button id="modal-close-button" class="px-4 py-2 bg-app-primary text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-app-primary">
-                                Fechar
-                            </button>
-                        </div>
-                    </div>
+    <!-- Modal de Mensagem (para feedback de sucesso/erro) -->
+    <div id="message-modal" class="hidden modal">
+        <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900">Mensagem do Sistema</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p id="modal-body" class="text-sm text-gray-500">...</p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="modal-close-button" class="px-4 py-2 bg-blue-700 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800">
+                        Fechar
+                    </button>
                 </div>
             </div>
-        </section>
-
-        <!-- Conteúdo do Painel do Gestor (Hidden por default) -->
-        <section id="panel-gestor" class="hidden space-y-8">
-            <h2 class="text-xl font-semibold text-app-primary">Indicadores de Conformidade</h2>
-
-            <!-- Cartões de Indicadores -->
-            <div class="grid gap-6 sm:grid-cols-3">
-                <div id="card-em-dia" class="card p-5 bg-iso-success text-white rounded-lg">
-                    <p class="text-sm font-medium">Em Dia</p>
-                    <p id="count-em-dia" class="text-3xl font-bold mt-1">0</p>
-                </div>
-                <div id="card-atencao" class="card p-5 bg-iso-warning text-white rounded-lg">
-                    <p class="text-sm font-medium">Em Atenção</p>
-                    <p id="count-atencao" class="text-3xl font-bold mt-1">0</p>
-                </div>
-                <div id="card-vencido" class="card p-5 bg-iso-danger text-white rounded-lg">
-                    <p class="text-sm font-medium">Vencido/Pendente</p>
-                    <p id="count-vencido" class="text-3xl font-bold mt-1">0</p>
-                </div>
+        </div>
+    </div>
+    
+    <!-- Modal "Assistir" Treinamento (Funcionário) -->
+    <div id="video-modal" class="modal hidden">
+        <div class="bg-white w-full max-w-lg p-6 rounded-lg shadow-xl m-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="video-modal-title" class="text-xl font-semibold">Título do Treinamento</h3>
+                <button id="close-video-modal-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
             </div>
-
-            <!-- Tabela de Rastreabilidade Completa -->
-            <div>
-                <h3 class="text-lg font-semibold mb-3 text-app-primary">Rastreabilidade da Equipe</h3>
-                <div id="loading-gestor" class="text-center text-gray-500">Carregando rastreabilidade da equipe...</div>
-                <div class="bg-white rounded-lg shadow-md overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matrícula</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Treinamento</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Conclusão</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validade</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="gestor-table-body" class="bg-white divide-y divide-gray-200">
-                            <!-- Linhas da tabela serão injetadas aqui -->
-                        </tbody>
-                    </table>
-                </div>
+            <div class="bg-gray-900 text-white h-64 flex items-center justify-center rounded-lg mb-4">
+                <p>(Simulação de Player de Vídeo)</p>
             </div>
-        </section>
+            <p id="video-modal-desc" class="text-gray-600 mb-6">Descrição do treinamento e sua importância para a legislação de Goiás.</p>
+            <button id="confirm-completion-btn" class="w-full bg-green-600 text-white font-medium py-3 px-5 rounded-lg shadow-md hover:bg-green-700 transition-colors">
+                Confirmar Conclusão
+            </button>
+        </div>
     </div>
 
-    <!-- Firebase Imports e Script Principal -->
+    <!-- Modal "Gerenciar" Treinamentos (Gestor - Lógica MOCK, pois seria feito no Backend) -->
+    <div id="manage-modal" class="modal hidden">
+        <div class="bg-white w-full max-w-2xl p-6 rounded-lg shadow-xl m-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold">Gerenciar Treinamentos</h3>
+                <button id="close-manage-modal-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            
+            <h4 class="text-lg font-semibold text-gray-700 mb-2">Adicionar Novo Treinamento (Apenas simulação visual)</h4>
+            <div class="p-4 border rounded-lg mb-6 bg-gray-50 text-gray-600">
+                <p>O cadastro de novos treinamentos é uma função do Backend (Java/Spring Boot). Esta interface é apenas uma simulação para fins de relatório acadêmico.</p>
+            </div>
+
+            <h4 class="text-lg font-semibold text-gray-700 mb-2">Treinamentos Existentes (Hardcoded)</h4>
+            <div id="manage-list" class="space-y-2">
+                <!-- Treinamentos Hardcoded são exibidos aqui, a gestão real seria via API -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Script Principal e Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURAÇÃO MANUAL DO FIREBASE (Substituindo variáveis de ambiente) ---
-        // ESTA É A SUA CONFIGURAÇÃO REAL OBTIDA DO CONSOLE DO FIREBASE:
+        // --- CONFIGURAÇÃO REAL DO FIREBASE ---
         const firebaseConfig = {
           apiKey: "AIzaSyBVyqEhlJsxuLeQrtjZRS538JZf28Pqtbk",
           authDomain: "sga-treinamento-goias.firebaseapp.com",
@@ -148,32 +281,28 @@
           appId: "1:1072216886470:web:0788e8f46a234189c19bc7"
         };
 
-        // Usa o projectId como AppId para consistência com o caminho do Firestore
+        // Variáveis de ambiente
         const appId = firebaseConfig.projectId; 
-        // Define initialAuthToken como null, pois usaremos autenticação anônima
         const initialAuthToken = null; 
         
-        // Variáveis globais
+        // Variáveis globais de estado e sistema
         let app, db, auth, userId;
         let currentMatricula = localStorage.getItem('currentMatricula') || null;
-        setLogLevel('Debug'); // Habilita logs para depuração
-
+        setLogLevel('Debug'); 
+        
+        const ATTENTION_DAYS = 30; // Zona de Alerta
+        
         // --- DADOS MOCK (Catálogo de Treinamentos, simulando o Backend Java) ---
         const TREINAMENTOS = [
-            { id: 'T101', titulo: 'Aspectos e Impactos Ambientais (ISO 14001)', periodicidade: 365, relevancia: 'ISO, Legal' },
-            { id: 'T102', titulo: 'Gerenciamento de Resíduos Sólidos', periodicidade: 180, relevancia: 'Legal, Operacional (Goiás)' },
-            { id: 'T103', titulo: 'Uso Racional da Água', periodicidade: 540, relevancia: 'ISO, Operacional' },
-            { id: 'T104', titulo: 'Legislação do ICMS Ecológico (Goiás)', periodicidade: 730, relevancia: 'Legal, Administrativo' },
+            { id: 'T101', titulo: 'Aspectos e Impactos Ambientais (ISO 14001)', periodicidade: 365, publico_alvo: "todos", relevancia_goias: 'ISO, Legal' },
+            { id: 'T102', titulo: 'Gerenciamento de Resíduos Sólidos', periodicidade: 180, publico_alvo: "operacao", relevancia_goias: 'Legal, Operacional (Goiás)' },
+            { id: 'T103', titulo: 'Uso Racional da Água', periodicidade: 540, publico_alvo: "todos", relevancia_goias: 'ISO, Operacional' },
+            { id: 'T104', titulo: 'Legislação do ICMS Ecológico (Goiás)', periodicidade: 730, publico_alvo: "todos", relevancia_goias: 'Legal, Administrativo' },
         ];
         
         // --- FUNÇÕES DE CONFORMIDADE E LÓGICA DE NEGÓCIO ---
 
-        /**
-         * Calcula o status de conformidade baseado na data de validade.
-         * Esta é a lógica de negócio central (antigo ConformidadeService.java).
-         * @param {Date | null} dataValidade Data de expiração do treinamento.
-         * @returns {string} Status ('Em Dia', 'Atenção', 'Vencido', 'Pendente').
-         */
+        /** Calcula o status de conformidade baseado na data de validade (Simulação do Service Java). */
         function calcularStatus(dataValidade) {
             if (!dataValidade || isNaN(new Date(dataValidade))) return 'Pendente'; 
 
@@ -182,42 +311,36 @@
             const diffTime = validade.getTime() - hoje.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            if (diffDays <= 0) return 'Vencido'; // Data expirou
-            if (diffDays <= 30) return 'Atenção'; // 30 dias de aviso
+            if (diffDays <= 0) return 'Vencido';
+            if (diffDays <= ATTENTION_DAYS) return 'Atenção';
             return 'Em Dia';
         }
 
-        /**
-         * Gera o caminho da coleção no Firestore para os registros de conformidade (Coleção Pública).
-         */
+        /** Gera o caminho da coleção no Firestore. */
         function getRegistrosCollection() {
-            // Caminho: /artifacts/{projectId}/public/data/registros_conformidade
             return collection(db, `/artifacts/${appId}/public/data/registros_conformidade`);
         }
 
-        // --- FUNÇÕES DE PERSISTÊNCIA (Simulação do Repository/Controller) ---
+        // --- FUNÇÕES DE PERSISTÊNCIA E AÇÃO ---
 
-        /**
-         * Registra a conclusão de um treinamento (POST /api/registro).
-         * @param {string} matricula Matrícula do funcionário.
-         * @param {string} treinamentoId ID do treinamento concluído.
-         */
+        /** Registra a conclusão de um treinamento (POST /api/registro). */
         async function registrarConclusao(matricula, treinamentoId) {
+            if (!db) throw new Error("Conexão com o Firebase não estabelecida.");
+            
             const treinamento = TREINAMENTOS.find(t => t.id === treinamentoId);
-            if (!treinamento) throw new Error("Treinamento não encontrado.");
+            if (!treinamento) throw new Error("Treinamento não encontrado no catálogo.");
 
             const dataConclusao = new Date();
             const validadeMillis = treinamento.periodicidade * 24 * 60 * 60 * 1000;
             const dataValidade = new Date(dataConclusao.getTime() + validadeMillis);
             
-            // O Firestore não aceita vírgulas em IDs de documentos
             const docId = `${matricula}_${treinamentoId}`; 
 
             const novoRegistro = {
                 matricula: matricula,
                 treinamentoId: treinamentoId,
-                dataConclusao: serverTimestamp(), // Firestore Timestamp para auditoria
-                dataValidade: dataValidade.toISOString(), // Salva como string ISO para cálculo
+                dataConclusao: serverTimestamp(),
+                dataValidade: dataValidade.toISOString(),
                 periodicidadeDias: treinamento.periodicidade,
             };
 
@@ -228,10 +351,10 @@
                 return `Conclusão registrada com sucesso! Próxima validade: ${new Date(dataValidade).toLocaleDateString('pt-BR')}.`;
             } catch (error) {
                 console.error("Erro ao registrar conclusão no Firestore:", error);
-                throw new Error("Falha ao salvar o registro no banco de dados. Verifique as Regras de Segurança do Firestore.");
+                throw new Error("Falha ao salvar o registro. Verifique as Regras de Segurança do Firebase. Erro: " + error.code);
             }
         }
-
+        
         // --- FUNÇÕES DE INTERFACE (Rendering) ---
 
         /** Exibe uma mensagem modal na tela. */
@@ -243,11 +366,10 @@
 
         /** Renderiza os cards de treinamento para o painel do funcionário. */
         function renderFuncionarioPanel(registros) {
-            const container = document.getElementById('funcionario-list');
+            const container = document.getElementById('training-list');
             container.innerHTML = '';
             document.getElementById('loading-funcionario').classList.add('hidden');
             
-            // Mapeia registros por ID do treinamento para acesso rápido
             const dataMap = registros.reduce((acc, reg) => {
                 acc[reg.treinamentoId] = reg;
                 return acc;
@@ -259,25 +381,24 @@
                 const status = calcularStatus(dataValidade);
 
                 let colorClass, statusText, actionEnabled;
-                if (status === 'Em Dia') { colorClass = 'bg-iso-success'; statusText = `Válido até: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = false; }
-                else if (status === 'Atenção') { colorClass = 'bg-iso-warning'; statusText = `ATENÇÃO! Vence em: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = true; }
-                else if (status === 'Vencido') { colorClass = 'bg-iso-danger'; statusText = `VENCIDO desde: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = true; }
-                else { colorClass = 'bg-iso-neutral'; statusText = 'Pendente de Conclusão'; actionEnabled = true; }
+                if (status === 'Em Dia') { colorClass = 'bg-status-em_dia'; statusText = `Válido até: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = false; }
+                else if (status === 'Atenção') { colorClass = 'bg-status-atencao'; statusText = `ATENÇÃO! Vence em: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = true; }
+                else if (status === 'Vencido') { colorClass = 'bg-status-vencido'; statusText = `VENCIDO desde: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = true; }
+                else { colorClass = 'bg-status-vencido'; statusText = 'Pendente de Conclusão'; actionEnabled = true; }
                 
-                // Formata a data de validade para exibição no card
                 const validadeText = dataValidade ? dataValidade.toLocaleDateString('pt-BR') : 'N/A';
 
                 const card = `
                     <div class="card p-5 bg-white rounded-xl shadow-lg border-l-4 ${colorClass.replace('bg-', 'border-')}">
-                        <h4 class="text-lg font-semibold text-app-primary mb-2">${treinamento.titulo}</h4>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2">${treinamento.titulo}</h4>
                         <p class="text-sm text-gray-600">Periodicidade: ${treinamento.periodicidade} dias</p>
-                        <p class="text-sm text-gray-600">Relevância: ${treinamento.relevancia}</p>
+                        <p class="text-sm text-gray-600">Relevância: ${treinamento.relevancia_goias}</p>
                         <p class="text-sm font-semibold mt-2 text-gray-700">Validade: ${validadeText}</p>
                         <span class="inline-block px-3 py-1 mt-2 text-xs font-semibold text-white rounded-full ${colorClass}">${statusText}</span>
                         ${actionEnabled ? `
                             <button data-treinamento-id="${treinamento.id}" 
-                                    class="btn-concluir w-full mt-4 bg-app-primary text-white p-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors">
-                                Confirmar Conclusão Agora
+                                    class="btn-concluir w-full mt-4 bg-blue-700 text-white p-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors">
+                                Confirmar Conclusão
                             </button>
                         ` : `<button disabled class="w-full mt-4 bg-gray-300 text-gray-600 p-2 rounded-lg text-sm font-medium">Em Dia</button>`}
                     </div>
@@ -285,7 +406,6 @@
                 container.innerHTML += card;
             });
 
-            // Adiciona evento de clique para os botões de concluir
             document.querySelectorAll('.btn-concluir').forEach(button => {
                 button.onclick = async (e) => {
                     const id = e.target.getAttribute('data-treinamento-id');
@@ -297,7 +417,8 @@
                     } catch (error) {
                         showModal("Erro no Registro", error.message);
                     } finally {
-                        // Força o recarregamento dos dados via listener do Firestore
+                        e.target.disabled = false;
+                        e.target.textContent = 'Confirmar Conclusão';
                     }
                 };
             });
@@ -311,37 +432,33 @@
 
             const statusCounts = { 'Em Dia': 0, 'Atenção': 0, 'Vencido': 0, 'Pendente': 0 };
             
-            // Mapeia o pior status de cada funcionário para contagem no Dashboard
-            const pioresStatusPorMatricula = new Map();
-
             todosRegistros.forEach(reg => {
                 const dataValidade = new Date(reg.dataValidade);
                 const status = calcularStatus(dataValidade);
                 
-                // Verifica o status geral do funcionário (lógica simplificada: conta todos os registros)
+                // Contagem para o Dashboard
                 if (statusCounts.hasOwnProperty(status)) {
                     statusCounts[status]++;
                 } 
 
                 // --- Renderiza linha da tabela de rastreabilidade completa ---
                 let colorClass;
-                if (status === 'Em Dia') { colorClass = 'bg-iso-success'; }
-                else if (status === 'Atenção') { colorClass = 'bg-iso-warning'; }
-                else if (status === 'Vencido') { colorClass = 'bg-iso-danger'; }
-                else { colorClass = 'bg-iso-neutral'; }
+                if (status === 'Em Dia') { colorClass = 'bg-status-em_dia'; }
+                else if (status === 'Atenção') { colorClass = 'bg-status-atencao'; }
+                else if (status === 'Vencido' || status === 'Pendente') { colorClass = 'bg-status-vencido'; }
+                else { colorClass = 'bg-status-atencao'; }
                 
                 const treinamento = TREINAMENTOS.find(t => t.id === reg.treinamentoId)?.titulo || 'Desconhecido';
                 
-                // Formata dataConclusao se for um objeto Timestamp do Firestore
                 let dataConcText = reg.dataConclusao?.toDate() ? reg.dataConclusao.toDate().toLocaleDateString('pt-BR') : 'N/A';
                 
                 const row = `
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${reg.matricula}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${treinamento}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${dataConcText}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${dataValidade.toLocaleDateString('pt-BR')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <td class="p-4 text-gray-600">${reg.matricula}</td>
+                        <td class="p-4 text-gray-600">${treinamento}</td>
+                        <td class="p-4 text-gray-600">${dataConcText}</td>
+                        <td class="p-4 text-gray-600">${dataValidade.toLocaleDateString('pt-BR')}</td>
+                        <td class="p-4 text-center">
                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-white ${colorClass}">
                                 ${status}
                             </span>
@@ -351,31 +468,73 @@
                 tableBody.innerHTML += row;
             });
             
-            // Atualiza Cartões de Indicadores (combina Vencido e Pendente no risco)
-            document.getElementById('count-em-dia').textContent = statusCounts['Em Dia'];
-            document.getElementById('count-atencao').textContent = statusCounts['Atenção'];
-            document.getElementById('count-vencido').textContent = statusCounts['Vencido'] + statusCounts['Pendente'];
+            // Atualiza Cartões de Indicadores (combinando Vencido e Pendente no risco)
+            document.getElementById('stat-em_dia').textContent = statusCounts['Em Dia'];
+            document.getElementById('stat-atencao').textContent = statusCounts['Atenção'];
+            document.getElementById('stat-vencido').textContent = statusCounts['Vencido'] + statusCounts['Pendente'];
+
+            renderComplianceChart(statusCounts);
         }
 
+        function renderComplianceChart(stats) {
+            const ctx = document.getElementById('complianceChart').getContext('2d');
+            if (complianceChartInstance) {
+                complianceChartInstance.destroy();
+            }
+            complianceChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Em Dia', 'Vence em 30 dias', 'Risco/Vencido'],
+                    data: [stats.em_dia, stats.atencao, stats.vencido + stats.pendente],
+                    datasets: [{
+                        data: [stats['Em Dia'], stats['Atenção'], stats['Vencido'] + stats['Pendente']],
+                        backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 14, family: 'Inter' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed !== null) { label += context.parsed; }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
         // --- FUNÇÕES DE SETUP E AUTENTICAÇÃO ---
 
         /** Inicializa o Firebase e a Autenticação. */
         async function initializeFirebase() {
             try {
                 if (!firebaseConfig.apiKey) {
-                    showModal("Erro Crítico", "As chaves do Firebase não foram configuradas. Por favor, insira as chaves reais.");
+                    showModal("Erro Crítico", "As chaves do Firebase não foram configuradas. O sistema não pode iniciar.");
+                    document.getElementById('login-screen').classList.remove('hidden');
                     return;
                 }
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Autenticação: Garante que o usuário esteja autenticado (Autenticação Anônima)
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // Autenticação Anônima
+                await signInAnonymously(auth);
 
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
@@ -385,19 +544,17 @@
                         if (currentMatricula) {
                             handleLogin(currentMatricula, true);
                         } else {
-                             // Caso não haja sessão, o usuário permanece na tela de login
                              document.getElementById('login-screen').classList.remove('hidden');
                         }
                     } else {
-                        console.log("Usuário deslogado ou anônimo.");
-                        // Força o usuário a fazer o login manual se a autenticação falhar
+                        console.log("Falha na autenticação ou sessão encerrada.");
                         document.getElementById('login-screen').classList.remove('hidden');
                     }
                 });
 
             } catch (error) {
                 console.error("Erro na inicialização ou autenticação do Firebase:", error);
-                showModal("Erro Crítico", `Falha ao iniciar o banco de dados em nuvem. Verifique suas chaves e o Console. (${error.message})`);
+                showModal("Erro Crítico", `Falha ao iniciar a conexão com o Firebase. Detalhes: ${error.message}.`);
                 document.getElementById('login-screen').classList.remove('hidden');
             }
         }
@@ -413,40 +570,37 @@
             currentMatricula = matricula;
             localStorage.setItem('currentMatricula', currentMatricula);
             
-            // Esconde login e mostra a aplicação
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
-            document.getElementById('userIdDisplay').textContent = `Matrícula: ${currentMatricula} (UID: ${userId})`;
+            document.getElementById('userIdDisplay').textContent = `Matrícula: ${currentMatricula}`;
 
-            // Decide qual painel mostrar
-            if (currentMatricula === 'GESTOR') {
-                showPanel('gestor');
-                // O listener só deve ser setado uma vez
-                if (!isSessionResume) setupFirestoreListeners('gestor'); 
-            } else {
-                showPanel('funcionario');
-                if (!isSessionResume) setupFirestoreListeners('funcionario');
+            // Configura e inicia o listener (apenas se for o primeiro login/resume de sessão)
+            if (!isSessionResume) {
+                setupFirestoreListeners(currentMatricula === 'GESTOR' ? 'gestor' : 'funcionario');
             }
+            
+            // Exibe o painel correto
+            showPanel(currentMatricula === 'GESTOR' ? 'gestor' : 'funcionario');
         }
         
         /** Configura o listener em tempo real (onSnapshot) do Firestore. */
         function setupFirestoreListeners(panel) {
-            if (!db || !userId) return; // Garante que o Firebase está pronto
+            if (!db || !userId) return;
 
-            if (panel === 'funcionario' && currentMatricula !== 'GESTOR') {
-                // Filtra apenas os registros do usuário atual (simulando POST /api/conformidade/{matricula})
+            if (panel === 'funcionario') {
                 const q = query(getRegistrosCollection(), where("matricula", "==", currentMatricula));
                 onSnapshot(q, (snapshot) => {
+                    document.getElementById('loading-funcionario').classList.add('hidden');
                     const registros = snapshot.docs.map(doc => doc.data());
                     renderFuncionarioPanel(registros);
                 }, (error) => {
                     console.error("Erro no listener do Funcionário:", error);
                     showModal("Erro de Conexão", "Não foi possível carregar seus registros de treinamento.");
                 });
-            } else if (panel === 'gestor' && currentMatricula === 'GESTOR') {
-                // Busca *todos* os registros (simulando GET /api/indicadores/geral)
+            } else if (panel === 'gestor') {
                 const q = query(getRegistrosCollection());
                 onSnapshot(q, (snapshot) => {
+                    document.getElementById('loading-gestor').classList.add('hidden');
                     const todosRegistros = snapshot.docs.map(doc => doc.data());
                     renderGestorPanel(todosRegistros);
                 }, (error) => {
@@ -460,40 +614,38 @@
         function showPanel(panel) {
             const isGestor = panel === 'gestor';
             
-            // Só permite a navegação para o Gestor se a matrícula for GESTOR
             if (isGestor && currentMatricula !== 'GESTOR') {
-                showModal("Acesso Negado", "Você não tem permissão para acessar o Painel do Gestor. Matrícula inválida.");
-                showPanel('funcionario'); // Retorna ao painel de funcionário
+                showModal("Acesso Negado", "Você não tem permissão para acessar o Painel do Gestor.");
+                // Se a tentativa de ir para Gestor falhar, força o retorno para Funcionário
+                if (currentMatricula) {
+                    showPanel('funcionario'); 
+                } else {
+                    document.getElementById('login-screen').classList.remove('hidden');
+                }
                 return;
             }
             
-            document.getElementById('panel-gestor').classList.toggle('hidden', !isGestor);
-            document.getElementById('panel-funcionario').classList.toggle('hidden', isGestor);
+            // Alterna o conteúdo principal
+            document.getElementById('content-gestor').classList.toggle('hidden', !isGestor);
+            document.getElementById('content-funcionario').classList.toggle('hidden', isGestor);
             
             // Atualiza o estado da aba
-            document.getElementById('tab-gestor').classList.toggle('text-app-primary', isGestor);
-            document.getElementById('tab-gestor').classList.toggle('border-app-primary', isGestor);
-            document.getElementById('tab-gestor').classList.toggle('text-gray-500', !isGestor);
-            document.getElementById('tab-gestor').classList.toggle('border-transparent', !isGestor);
-
-            document.getElementById('tab-funcionario').classList.toggle('text-app-primary', !isGestor);
-            document.getElementById('tab-funcionario').classList.toggle('border-app-primary', !isGestor);
-            document.getElementById('tab-funcionario').classList.toggle('text-gray-500', isGestor);
-            document.getElementById('tab-funcionario').classList.toggle('border-transparent', isGestor);
+            document.getElementById('tab-gestor').classList.toggle('active-tab', isGestor);
+            document.getElementById('tab-funcionario').classList.toggle('active-tab', !isGestor);
             
-            // Se mudar para gestor, força a renderização se já estivermos logados
-            if(isGestor && currentMatricula === 'GESTOR') setupFirestoreListeners('gestor');
-            else if (!isGestor && currentMatricula !== 'GESTOR') setupFirestoreListeners('funcionario');
+            // Garante que o listener correto esteja ativo ao mudar de aba
+            setupFirestoreListeners(panel); 
         }
 
         // --- Event Listeners Globais ---
         document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebase(); // Inicia o Firebase
+            initializeFirebase(); // Inicia o Firebase e tenta Autenticar
             
-            // Login Screen
+            // Login Screen Event
             document.getElementById('login-button').addEventListener('click', () => {
                 const matricula = document.getElementById('matricula-input').value;
-                handleLogin(matricula);
+                // handleLogin chamará setupFirestoreListeners pela primeira vez
+                handleLogin(matricula); 
             });
             document.getElementById('matricula-input').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -509,7 +661,27 @@
             document.getElementById('modal-close-button').addEventListener('click', () => {
                 document.getElementById('message-modal').classList.add('hidden');
             });
+
+            // Gerenciar Treinamentos MOCK (Para fins de Relatório, apenas simulação)
+            document.getElementById('open-manage-modal-btn').addEventListener('click', () => {
+                const listContainer = document.getElementById('manage-list');
+                listContainer.innerHTML = '';
+                TREINAMENTOS.forEach(t => {
+                    listContainer.innerHTML += `
+                        <div class="flex justify-between items-center p-3 bg-gray-100 rounded">
+                            <div>
+                                <span class="font-medium">${t.titulo}</span>
+                                <span class="text-sm text-gray-500 ml-2">(${t.periodicidade} dias)</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('manage-modal').classList.remove('hidden');
+            });
+            document.getElementById('close-manage-modal-btn').addEventListener('click', () => document.getElementById('manage-modal').classList.add('hidden'));
+
         });
     </script>
+
 </body>
 </html>
