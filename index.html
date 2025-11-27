@@ -133,7 +133,8 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, onSnapshot, collection, query, where, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Variáveis globais para Firebase (Obrigatório para o ambiente Canvas)
+// --- CONFIGURAÇÃO MANUAL DO FIREBASE (Substituindo variáveis de ambiente) ---
+// Configuração real obtida do Console do Firebase:
 const firebaseConfig = {
   apiKey: "AIzaSyBVyqEhlJsxuLeQrtjZRS538JZf28Pqtbk",
   authDomain: "sga-treinamento-goias.firebaseapp.com",
@@ -141,7 +142,7 @@ const firebaseConfig = {
   storageBucket: "sga-treinamento-goias.firebasestorage.app",
   messagingSenderId: "1072216886470",
   appId: "1:1072216886470:web:0788e8f46a234189c19bc7"
-  // Não precisamos do measurementId para o funcionamento do Firestore
+  // Removido: measurementId: "G-S78X7K0ZLM"
 };
 
 // Usa o projectId como AppId para consistência com o caminho do Firestore
@@ -150,15 +151,13 @@ const appId = firebaseConfig.projectId;
 const initialAuthToken = null; 
 ```
 
-**Observação:** Eu removi o `measurementId` (`G-S78X7K0ZLM`) porque ele é usado apenas para o Google Analytics e não é necessário para a funcionalidade do Firestore (banco de dados).
+### Próximos Passos (Após Salvar a Correção)
 
-### Próximos Passos (Publicação)
-
-1.  **Salve:** Salve seu arquivo `index.html` com essa nova configuração.
-2.  **Commit & Push:** Volte ao terminal, pois essa é uma mudança crucial. Use os comandos Git:
+1.  **Salve** o seu arquivo `index.html`.
+2.  **Commit & Push:** Volte ao terminal e envie a correção para o GitHub. Este passo é crucial, pois a versão online do seu código está com o erro.
     ```bash
     git add .
-    git commit -m "Configuracao final do Firebase no index.html"
+    git commit -m "Correcao do erro de sintaxe measurementId na configuracao do Firebase."
     git push -u origin main
 
         // Variáveis globais
