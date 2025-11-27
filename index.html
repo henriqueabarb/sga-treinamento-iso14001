@@ -4,16 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGA - Gestão de Treinamentos</title>
+
+    <!-- Tailwind via CDN (biblioteca de CSS pronta) -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js para gráfico de rosca (doughnut) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Fonte Inter (deixa o visual mais moderno) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
+        /* Estilo básico da página (cor de fundo, fonte, etc.) */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+
+        /* Classe das abas (tabs) do menu Gestor / Funcionário */
         .nav-tab {
             padding: 0.75rem 1.5rem;
             cursor: pointer;
@@ -22,18 +32,24 @@
             border-bottom: 2px solid transparent;
             transition: all 0.3s ease;
         }
-        /* Corrigindo cor de aba ativa para azul padrão do código original (1E40AF) */
+
+        /* Aba ativa fica com a cor azul e borda embaixo */
         .nav-tab.active-tab {
             color: #1E40AF; 
             border-bottom-color: #1E40AF;
         }
+
+        /* Animação de entrada das páginas (fica mais suave) */
         .page-content {
             animation: fadeIn 0.5s ease-in-out;
         }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Container do gráfico de rosca */
         .chart-container {
             position: relative;
             width: 100%;
@@ -43,11 +59,14 @@
             height: 300px;
             max-height: 350px;
         }
+
         @media (min-width: 768px) {
             .chart-container {
                 height: 350px;
             }
         }
+
+        /* Classe genérica para modais (caixas que aparecem por cima da tela) */
         .modal {
             background-color: rgba(0, 0, 0, 0.5);
             display: flex;
@@ -60,6 +79,8 @@
             bottom: 0;
             z-index: 50;
         }
+
+        /* Pontinhos de status na tabela (cores) */
         .status-dot {
             width: 10px;
             height: 10px;
@@ -67,46 +88,79 @@
             display: inline-block;
             margin-right: 8px;
         }
-        .bg-status-em_dia { background-color: #10B981; } 
+
+        .bg-status-em_dia { background-color: #10B981; }  /* Verde */
         .text-status-em_dia { color: #059669; }
-        .bg-status-atencao { background-color: #F59E0B; }
+        .bg-status-atencao { background-color: #F59E0B; } /* Amarelo */
         .text-status-atencao { color: #D97706; }
-        .bg-status-vencido { background-color: #EF4444; }
+        .bg-status-vencido { background-color: #EF4444; } /* Vermelho */
         .text-status-vencido { color: #DC2626; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Chosen Palette: Neutros Calmos (Cinza, Azul, com acentos Verde/Amarelo/Vermelho para status) -->
-    <!-- Application Structure Plan: A aplicação é estruturada em torno de duas personas principais identificadas no relatório: "Gestor" e "Funcionário". A navegação por abas (Tabs) permite alternar entre esses dois painéis. O "Painel do Gestor" (visão padrão) usa um layout de dashboard, priorizando o status de conformidade geral (gráfico de rosca) e uma tabela detalhada de funcionários, alinhado ao objetivo de auditoria da ISO 14001. O "Painel do Funcionário" é uma visualização focada em tarefas, listando treinamentos pendentes. Esta estrutura de papéis é a mais intuitiva para as funcionalidades descritas no relatório-fonte. -->
-    <!-- Visualization & Content Choices: 
-        1. Status Geral (Gestor): Report Info -> "Dashboard de Conformidade", "Indicador de Atraso". Goal -> Informar proporção. Viz/Method -> Gráfico de Rosca (Doughnut Chart). Interaction -> Tooltip ao passar o mouse. Justification -> Melhor visualização para proporção (Em Dia, Atenção, Vencido) do total. Library -> Chart.js (Canvas).
-        2. Status por Funcionário (Gestor): Report Info -> "Tabela que lista todos os funcionários e o status". Goal -> Organizar, Informar detalhes. Viz/Method -> Tabela HTML com status codificado por cor. Interaction -> Nenhuma (apenas visual). Justification -> Método padrão e mais claro para dados tabulares. Library -> HTML/Tailwind/JS.
-        3. Lista de Treinamentos (Funcionário): Report Info -> "Exibe a lista de treinamentos pendentes". Goal -> Informar tarefas. Viz/Method -> Lista de Cards (HTML/Tailwind). Interaction -> Click no card abre modal. Justification -> Cards são mais amigáveis ao toque e visualmente claros que uma tabela para uma lista de tarefas. Library -> HTML/Tailwind/JS.
-        4. Simulação de Vídeo (Funcionário): Report Info -> "Simulação de 'Assistir ao Vídeo'". Goal -> Interagir (completar tarefa). Viz/Method -> Modal com texto e botão de confirmação. Interaction -> Click no botão "Confirmar". Justification -> Modal foca a atenção do usuário na tarefa de conclusão. Library -> HTML/Tailwind/JS.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- ============================== -->
+    <!-- TELA DE LOGIN                  -->
+    <!-- ============================== -->
 
-    <!-- Tela de Login -->
+    <!-- Essa div é a tela inicial onde o usuário digita a matrícula -->
     <div id="login-screen" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl mt-12">
         <h1 class="text-2xl font-bold text-blue-800 mb-4 text-center">Login SGA</h1>
         <p class="text-gray-600 mb-6 text-center">Insira sua matrícula para acessar o painel de competência.</p>
-        <input type="text" id="matricula-input" placeholder="Ex: 12345 (Funcionário) ou GESTOR" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-blue-800 focus:border-blue-800">
-        <button id="login-button" class="w-full bg-blue-700 text-white p-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">Acessar Sistema</button>
+
+        <!-- Campo de texto onde o usuário digita a matrícula -->
+        <input 
+            type="text" 
+            id="matricula-input" 
+            placeholder="Ex: 12345 (Funcionário) ou GESTOR" 
+            class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-blue-800 focus:border-blue-800"
+        >
+
+        <!-- Botão para fazer login -->
+        <button 
+            id="login-button" 
+            class="w-full bg-blue-700 text-white p-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+            Acessar Sistema
+        </button>
+
         <p class="mt-4 text-sm text-gray-500 text-center">Use 'GESTOR' para o painel de indicadores.</p>
     </div>
 
-    <!-- Container Principal da Aplicação -->
+    <!-- ============================== -->
+    <!-- CONTAINER PRINCIPAL DA APLICAÇÃO -->
+    <!-- ============================== -->
+
+    <!-- Essa div é o sistema em si (dashboard). Ela começa escondida (class="hidden") -->
     <div id="app-container" class="hidden">
         <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         
-            <header class="mb-6">
-                <h1 class="text-3xl font-bold text-blue-800">SGA: Gestão de Treinamentos (ISO 14001)</h1>
-                <p class="text-lg text-gray-600 mt-1">Plataforma interativa para registro e conformidade de treinamentos ambientais (Goiás).</p>
-                <!-- Exibe Matrícula e UID do Firebase (para depuração e rastreabilidade) -->
-                <p id="userIdDisplay" class="mt-1 text-sm text-gray-600">Matrícula Atual: N/A</p>
+            <!-- Cabeçalho do sistema -->
+            <header class="mb-6 flex justify-between items-start gap-4">
+                <!-- Lado esquerdo: título e descrição -->
+                <div>
+                    <h1 class="text-3xl font-bold text-blue-800">
+                        SGA: Gestão de Treinamentos (ISO 14001)
+                    </h1>
+                    <p class="text-lg text-gray-600 mt-1">
+                        Plataforma interativa para registro e conformidade de treinamentos ambientais (Goiás).
+                    </p>
+
+                    <!-- Aqui aparece a matrícula atual do usuário logado -->
+                    <p id="userIdDisplay" class="mt-1 text-sm text-gray-600">
+                        Matrícula Atual: N/A
+                    </p>
+                </div>
+
+                <!-- Lado direito: botão para voltar para a tela de login -->
+                <!-- Esse botão faz um "logout" simples, limpando a matrícula e voltando ao login -->
+                <button
+                    id="logout-button"
+                    class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-300 transition-colors">
+                    ← Voltar para Login
+                </button>
             </header>
 
+            <!-- Navegação por abas: Gestor / Funcionário -->
             <nav class="flex border-b border-gray-300 mb-6">
                 <button id="tab-gestor" class="nav-tab active-tab">Painel do Gestor</button>
                 <button id="tab-funcionario" class="nav-tab">Painel do Funcionário</button>
@@ -119,9 +173,13 @@
                 <div id="content-gestor" class="page-content">
                     <section id="gestor-dashboard">
                         <h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard de Conformidade</h2>
-                        <p class="text-gray-600 mb-6">Esta seção apresenta o status geral de conformidade dos treinamentos da equipe. O gráfico de rosca resume a situação atual, enquanto os cartões destacam os números absolutos. A tabela abaixo detalha o status por funcionário.</p>
+                        <p class="text-gray-600 mb-6">
+                            Esta seção mostra um resumo da situação dos treinamentos da equipe.
+                            O gráfico de rosca resume Em Dia, Atenção e Vencido, e a tabela mostra os detalhes por funcionário.
+                        </p>
                         
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Card com o gráfico de rosca -->
                             <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
                                 <h3 class="text-lg font-semibold text-center mb-4">Status Geral de Conformidade</h3>
                                 <div class="chart-container">
@@ -129,7 +187,9 @@
                                 </div>
                             </div>
                             
+                            <!-- Cards com números (estatísticas) -->
                             <div class="space-y-4">
+                                <!-- Registros vencidos -->
                                 <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
                                     <div class="p-3 rounded-full bg-status-vencido bg-opacity-20">
                                         <span class="text-2xl text-status-vencido">⚠️</span>
@@ -139,6 +199,8 @@
                                         <div class="text-sm font-medium text-gray-500">Registros Vencidos</div>
                                     </div>
                                 </div>
+
+                                <!-- Registros que vencem em 30 dias -->
                                 <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
                                     <div class="p-3 rounded-full bg-status-atencao bg-opacity-20">
                                         <span class="text-2xl text-status-atencao">🔔</span>
@@ -148,6 +210,8 @@
                                         <div class="text-sm font-medium text-gray-500">Vence em 30 dias</div>
                                     </div>
                                 </div>
+
+                                <!-- Registros em dia -->
                                 <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
                                     <div class="p-3 rounded-full bg-status-em_dia bg-opacity-20">
                                         <span class="text-2xl text-status-em_dia">✅</span>
@@ -161,9 +225,18 @@
                         </div>
                     </section>
 
+                    <!-- Tabela com todos os registros da equipe -->
                     <section id="gestor-tabela" class="mt-8">
-                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Rastreabilidade da Equipe (Registros)</h2>
-                        <div id="loading-gestor" class="text-center text-gray-500 my-8">Carregando rastreabilidade da equipe...</div>
+                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">
+                            Rastreabilidade da Equipe (Registros)
+                        </h2>
+
+                        <!-- Mensagem enquanto carrega dados -->
+                        <div id="loading-gestor" class="text-center text-gray-500 my-8">
+                            Carregando rastreabilidade da equipe...
+                        </div>
+
+                        <!-- Tabela de registros -->
                         <div class="bg-white rounded-lg shadow-md overflow-hidden">
                             <div class="overflow-x-auto">
                                 <table class="w-full min-w-[600px]">
@@ -177,11 +250,16 @@
                                         </tr>
                                     </thead>
                                     <tbody id="gestor-table-body" class="divide-y divide-gray-200">
+                                        <!-- Linhas são preenchidas via JavaScript -->
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        <button id="open-manage-modal-btn" class="mt-6 bg-blue-700 text-white font-medium py-2 px-5 rounded-lg shadow-md hover:bg-blue-800 transition-colors">
+
+                        <!-- Botão que abre modal de "Gerenciar Treinamentos" (simulação) -->
+                        <button 
+                            id="open-manage-modal-btn" 
+                            class="mt-6 bg-blue-700 text-white font-medium py-2 px-5 rounded-lg shadow-md hover:bg-blue-800 transition-colors">
                             Gerenciar Treinamentos (Simulado)
                         </button>
                     </section>
@@ -193,11 +271,22 @@
                 <div id="content-funcionario" class="page-content hidden">
                     <section id="funcionario-treinamentos">
                         <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-2xl font-semibold text-gray-700">Meus Treinamentos Obrigatórios</h2>
+                            <h2 class="text-2xl font-semibold text-gray-700">
+                                Meus Treinamentos Obrigatórios
+                            </h2>
                         </div>
-                        <p class="text-gray-600 mb-6">Esta é a sua lista de treinamentos ambientais obrigatórios. Clique para confirmar a conclusão e registrar a conformidade. Mantenha seus treinamentos em dia!</p>
+
+                        <p class="text-gray-600 mb-6">
+                            Aqui aparecem os treinamentos ambientais obrigatórios.
+                            O funcionário pode confirmar a conclusão para registrar a conformidade.
+                        </p>
                         
-                        <div id="loading-funcionario" class="text-center text-gray-500 my-8">Carregando dados de conformidade...</div>
+                        <!-- Mensagem enquanto carrega os dados -->
+                        <div id="loading-funcionario" class="text-center text-gray-500 my-8">
+                            Carregando dados de conformidade...
+                        </div>
+
+                        <!-- Lista de cards de treinamentos (preenchida no JS) -->
                         <div id="training-list" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         </div>
                     </section>
@@ -210,16 +299,20 @@
     <!-- MODAIS                         -->
     <!-- ============================== -->
 
-    <!-- Modal de Mensagem (para feedback de sucesso/erro) -->
+    <!-- Modal genérico para mostrar mensagens (sucesso/erro) -->
     <div id="message-modal" class="hidden modal">
         <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
-                <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900">Mensagem do Sistema</h3>
+                <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900">
+                    Mensagem do Sistema
+                </h3>
                 <div class="mt-2 px-7 py-3">
                     <p id="modal-body" class="text-sm text-gray-500">...</p>
                 </div>
                 <div class="items-center px-4 py-3">
-                    <button id="modal-close-button" class="px-4 py-2 bg-blue-700 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800">
+                    <button 
+                        id="modal-close-button" 
+                        class="px-4 py-2 bg-blue-700 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800">
                         Fechar
                     </button>
                 </div>
@@ -227,24 +320,33 @@
         </div>
     </div>
     
-    <!-- Modal "Assistir" Treinamento (Funcionário) -->
+    <!-- Modal de "Assistir" treinamento (simula um player de vídeo) -->
     <div id="video-modal" class="modal hidden">
         <div class="bg-white w-full max-w-lg p-6 rounded-lg shadow-xl m-4">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="video-modal-title" class="text-xl font-semibold">Título do Treinamento</h3>
                 <button id="close-video-modal-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
             </div>
+
+            <!-- Aqui seria o vídeo de fato, mas no projeto é só simulação -->
             <div class="bg-gray-900 text-white h-64 flex items-center justify-center rounded-lg mb-4">
                 <p>(Simulação de Player de Vídeo)</p>
             </div>
-            <p id="video-modal-desc" class="text-gray-600 mb-6">Descrição do treinamento e sua importância para a legislação de Goiás.</p>
-            <button id="confirm-completion-btn" class="w-full bg-green-600 text-white font-medium py-3 px-5 rounded-lg shadow-md hover:bg-green-700 transition-colors">
+
+            <p id="video-modal-desc" class="text-gray-600 mb-6">
+                Descrição do treinamento e sua importância para a legislação de Goiás.
+            </p>
+
+            <!-- Botão para confirmar que concluiu o treinamento -->
+            <button 
+                id="confirm-completion-btn" 
+                class="w-full bg-green-600 text-white font-medium py-3 px-5 rounded-lg shadow-md hover:bg-green-700 transition-colors">
                 Confirmar Conclusão
             </button>
         </div>
     </div>
 
-    <!-- Modal "Gerenciar" Treinamentos (Gestor - Lógica MOCK, pois seria feito no Backend) -->
+    <!-- Modal de "Gerenciar" treinamentos (apenas visual, sem backend real) -->
     <div id="manage-modal" class="modal hidden">
         <div class="bg-white w-full max-w-2xl p-6 rounded-lg shadow-xl m-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
@@ -252,26 +354,49 @@
                 <button id="close-manage-modal-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
             </div>
             
-            <h4 class="text-lg font-semibold text-gray-700 mb-2">Adicionar Novo Treinamento (Apenas simulação visual)</h4>
+            <h4 class="text-lg font-semibold text-gray-700 mb-2">
+                Adicionar Novo Treinamento (Simulação visual)
+            </h4>
             <div class="p-4 border rounded-lg mb-6 bg-gray-50 text-gray-600">
-                <p>O cadastro de novos treinamentos é uma função do Backend (Java/Spring Boot). Esta interface é apenas uma simulação para fins de relatório acadêmico.</p>
+                <p>
+                    O cadastro de novos treinamentos é uma função do Backend (Java/Spring Boot).
+                    Esta tela é só para mostrar no relatório (não grava nada de verdade).
+                </p>
             </div>
 
-            <h4 class="text-lg font-semibold text-gray-700 mb-2">Treinamentos Existentes (Hardcoded)</h4>
+            <h4 class="text-lg font-semibold text-gray-700 mb-2">
+                Treinamentos Existentes (Hardcoded)
+            </h4>
             <div id="manage-list" class="space-y-2">
-                <!-- Treinamentos Hardcoded são exibidos aqui, a gestão real seria via API -->
+                <!-- A lista é preenchida via JavaScript com base no array TREINAMENTOS -->
             </div>
         </div>
     </div>
 
 
-    <!-- Script Principal e Firebase -->
+    <!-- ============================== -->
+    <!-- SCRIPT PRINCIPAL + FIREBASE    -->
+    <!-- ============================== -->
     <script type="module">
+        /* 
+          Aqui começa a parte de JavaScript.
+          É onde fazemos:
+          - Conexão com Firebase
+          - Login anônimo
+          - Leitura/gravação no Firestore
+          - Renderização dinâmica da tela
+        */
+
+        // Import das funções do Firebase (versão modular)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { 
+            getFirestore, doc, setDoc, onSnapshot, collection, query, where, 
+            serverTimestamp, setLogLevel 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURAÇÃO REAL DO FIREBASE ---
+        // Esses dados são pegos do Console do Firebase (Configuração do app web)
         const firebaseConfig = {
           apiKey: "AIzaSyBVyqEhlJsxuLeQrtjZRS538JZf28Pqtbk",
           authDomain: "sga-treinamento-goias.firebaseapp.com",
@@ -281,18 +406,25 @@
           appId: "1:1072216886470:web:0788e8f46a234189c19bc7"
         };
 
-        // Variáveis de ambiente
+        // Só um exemplo de uso de variável de ambiente / identificação
         const appId = firebaseConfig.projectId; 
-        const initialAuthToken = null; 
-        
-        // Variáveis globais de estado e sistema
+        const initialAuthToken = null; // não está sendo usado aqui
+
+        // Variáveis globais de estado (para guardar objetos do Firebase e info do usuário)
         let app, db, auth, userId;
         let currentMatricula = localStorage.getItem('currentMatricula') || null;
+
+        // Log do Firestore em modo "Debug" (ajuda a enxergar problemas no console)
         setLogLevel('Debug'); 
         
-        const ATTENTION_DAYS = 30; // Zona de Alerta
+        // Quantos dias antes da validade o sistema considera "Atenção"
+        const ATTENTION_DAYS = 30;
+
+        // Instância do gráfico de rosca (para poder destruir e recriar quando atualizar)
+        let complianceChartInstance = null;
         
-        // --- DADOS MOCK (Catálogo de Treinamentos, simulando o Backend Java) ---
+        // --- DADOS MOCK (Catálogo de Treinamentos, simulando Backend Java) ---
+        // Esse array representa a "tabela" de tipos de treinamentos que existem na empresa
         const TREINAMENTOS = [
             { id: 'T101', titulo: 'Aspectos e Impactos Ambientais (ISO 14001)', periodicidade: 365, publico_alvo: "todos", relevancia_goias: 'ISO, Legal' },
             { id: 'T102', titulo: 'Gerenciamento de Resíduos Sólidos', periodicidade: 180, publico_alvo: "operacao", relevancia_goias: 'Legal, Operacional (Goiás)' },
@@ -300,9 +432,16 @@
             { id: 'T104', titulo: 'Legislação do ICMS Ecológico (Goiás)', periodicidade: 730, publico_alvo: "todos", relevancia_goias: 'Legal, Administrativo' },
         ];
         
-        // --- FUNÇÕES DE CONFORMIDADE E LÓGICA DE NEGÓCIO ---
+        // =====================================================
+        // FUNÇÕES DE LÓGICA DE NEGÓCIO (CONFORMIDADE)
+        // =====================================================
 
-        /** Calcula o status de conformidade baseado na data de validade (Simulação do Service Java). */
+        /**
+         * Calcula o status do treinamento com base na data de validade.
+         * - Se já passou da validade: "Vencido"
+         * - Se está dentro dos próximos ATTENTION_DAYS dias: "Atenção"
+         * - Senão: "Em Dia"
+         */
         function calcularStatus(dataValidade) {
             if (!dataValidade || isNaN(new Date(dataValidade))) return 'Pendente'; 
 
@@ -316,14 +455,23 @@
             return 'Em Dia';
         }
 
-        /** Gera o caminho da coleção no Firestore. */
+        /**
+         * Retorna a coleção do Firestore onde os registros de conformidade são salvos.
+         * A estrutura usa um path "artifacts/{appId}/public/data/registros_conformidade".
+         */
         function getRegistrosCollection() {
             return collection(db, `/artifacts/${appId}/public/data/registros_conformidade`);
         }
 
-        // --- FUNÇÕES DE PERSISTÊNCIA E AÇÃO ---
+        // =====================================================
+        // FUNÇÕES DE PERSISTÊNCIA (GRAVAR NO FIRESTORE)
+        // =====================================================
 
-        /** Registra a conclusão de um treinamento (POST /api/registro). */
+        /**
+         * Registra a conclusão de um treinamento para uma matrícula.
+         * - Calcula nova data de validade usando a periodicidade (dias).
+         * - Usa setDoc com docId único (matricula + treinamentoId).
+         */
         async function registrarConclusao(matricula, treinamentoId) {
             if (!db) throw new Error("Conexão com o Firebase não estabelecida.");
             
@@ -339,13 +487,13 @@
             const novoRegistro = {
                 matricula: matricula,
                 treinamentoId: treinamentoId,
-                dataConclusao: serverTimestamp(),
+                dataConclusao: serverTimestamp(),   // serverTimestamp para garantir horário do servidor
                 dataValidade: dataValidade.toISOString(),
                 periodicidadeDias: treinamento.periodicidade,
             };
 
             try {
-                // Upsert: Adiciona ou atualiza o registro usando o docId único
+                // Upsert: se já tiver documento com esse id, ele substitui; se não tiver, cria
                 const docRef = doc(getRegistrosCollection(), docId);
                 await setDoc(docRef, novoRegistro);
                 return `Conclusão registrada com sucesso! Próxima validade: ${new Date(dataValidade).toLocaleDateString('pt-BR')}.`;
@@ -355,39 +503,62 @@
             }
         }
         
-        // --- FUNÇÕES DE INTERFACE (Rendering) ---
+        // =====================================================
+        // FUNÇÕES DE INTERFACE (RENDERIZAÇÃO NA TELA)
+        // =====================================================
 
-        /** Exibe uma mensagem modal na tela. */
+        /**
+         * Exibe o modal de mensagem com título e texto.
+         */
         function showModal(title, body) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').innerHTML = body;
             document.getElementById('message-modal').classList.remove('hidden');
         }
 
-        /** Renderiza os cards de treinamento para o painel do funcionário. */
+        /**
+         * Renderiza os cards do painel do funcionário.
+         * Cada card representa um treinamento obrigatório.
+         */
         function renderFuncionarioPanel(registros) {
             const container = document.getElementById('training-list');
             container.innerHTML = '';
             document.getElementById('loading-funcionario').classList.add('hidden');
             
+            // Mapeia os registros por ID de treinamento (para achar mais fácil depois)
             const dataMap = registros.reduce((acc, reg) => {
                 acc[reg.treinamentoId] = reg;
                 return acc;
             }, {});
 
+            // Para cada treinamento do catálogo, verifica o status
             TREINAMENTOS.forEach(treinamento => {
                 const registro = dataMap[treinamento.id] || null;
                 const dataValidade = registro ? new Date(registro.dataValidade) : null;
                 const status = calcularStatus(dataValidade);
 
                 let colorClass, statusText, actionEnabled;
-                if (status === 'Em Dia') { colorClass = 'bg-status-em_dia'; statusText = `Válido até: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = false; }
-                else if (status === 'Atenção') { colorClass = 'bg-status-atencao'; statusText = `ATENÇÃO! Vence em: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = true; }
-                else if (status === 'Vencido') { colorClass = 'bg-status-vencido'; statusText = `VENCIDO desde: ${dataValidade.toLocaleDateString('pt-BR')}`; actionEnabled = true; }
-                else { colorClass = 'bg-status-vencido'; statusText = 'Pendente de Conclusão'; actionEnabled = true; }
+                if (status === 'Em Dia') { 
+                    colorClass = 'bg-status-em_dia'; 
+                    statusText = `Válido até: ${dataValidade.toLocaleDateString('pt-BR')}`; 
+                    actionEnabled = false; 
+                } else if (status === 'Atenção') { 
+                    colorClass = 'bg-status-atencao'; 
+                    statusText = `ATENÇÃO! Vence em: ${dataValidade.toLocaleDateString('pt-BR')}`; 
+                    actionEnabled = true; 
+                } else if (status === 'Vencido') { 
+                    colorClass = 'bg-status-vencido'; 
+                    statusText = `VENCIDO desde: ${dataValidade.toLocaleDateString('pt-BR')}`; 
+                    actionEnabled = true; 
+                } else { 
+                    colorClass = 'bg-status-vencido'; 
+                    statusText = 'Pendente de Conclusão'; 
+                    actionEnabled = true; 
+                }
                 
                 const validadeText = dataValidade ? dataValidade.toLocaleDateString('pt-BR') : 'N/A';
 
+                // HTML do card
                 const card = `
                     <div class="card p-5 bg-white rounded-xl shadow-lg border-l-4 ${colorClass.replace('bg-', 'border-')}">
                         <h4 class="text-lg font-semibold text-gray-800 mb-2">${treinamento.titulo}</h4>
@@ -400,12 +571,17 @@
                                     class="btn-concluir w-full mt-4 bg-blue-700 text-white p-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors">
                                 Confirmar Conclusão
                             </button>
-                        ` : `<button disabled class="w-full mt-4 bg-gray-300 text-gray-600 p-2 rounded-lg text-sm font-medium">Em Dia</button>`}
+                        ` : `
+                            <button disabled class="w-full mt-4 bg-gray-300 text-gray-600 p-2 rounded-lg text-sm font-medium">
+                                Em Dia
+                            </button>
+                        `}
                     </div>
                 `;
                 container.innerHTML += card;
             });
 
+            // Adiciona eventos nos botões "Confirmar Conclusão"
             document.querySelectorAll('.btn-concluir').forEach(button => {
                 button.onclick = async (e) => {
                     const id = e.target.getAttribute('data-treinamento-id');
@@ -424,7 +600,10 @@
             });
         }
 
-        /** Renderiza a tabela e os indicadores do painel do gestor. */
+        /**
+         * Renderiza a tabela e os indicadores do painel do gestor.
+         * Recebe todos os registros de todos os funcionários.
+         */
         function renderGestorPanel(todosRegistros) {
             const tableBody = document.getElementById('gestor-table-body');
             tableBody.innerHTML = '';
@@ -436,21 +615,26 @@
                 const dataValidade = new Date(reg.dataValidade);
                 const status = calcularStatus(dataValidade);
                 
-                // Contagem para o Dashboard
+                // Soma a quantidade por status
                 if (statusCounts.hasOwnProperty(status)) {
                     statusCounts[status]++;
-                } 
+                }
 
-                // --- Renderiza linha da tabela de rastreabilidade completa ---
+                // Define cor da "pill" de status na tabela
                 let colorClass;
-                if (status === 'Em Dia') { colorClass = 'bg-status-em_dia'; }
-                else if (status === 'Atenção') { colorClass = 'bg-status-atencao'; }
-                else if (status === 'Vencido' || status === 'Pendente') { colorClass = 'bg-status-vencido'; }
-                else { colorClass = 'bg-status-atencao'; }
+                if (status === 'Em Dia') { 
+                    colorClass = 'bg-status-em_dia'; 
+                } else if (status === 'Atenção') { 
+                    colorClass = 'bg-status-atencao'; 
+                } else if (status === 'Vencido' || status === 'Pendente') { 
+                    colorClass = 'bg-status-vencido'; 
+                } else { 
+                    colorClass = 'bg-status-atencao'; 
+                }
                 
                 const treinamento = TREINAMENTOS.find(t => t.id === reg.treinamentoId)?.titulo || 'Desconhecido';
                 
-                let dataConcText = reg.dataConclusao?.toDate() ? reg.dataConclusao.toDate().toLocaleDateString('pt-BR') : 'N/A';
+                let dataConcText = reg.dataConclusao?.toDate ? reg.dataConclusao.toDate().toLocaleDateString('pt-BR') : 'N/A';
                 
                 const row = `
                     <tr>
@@ -468,26 +652,36 @@
                 tableBody.innerHTML += row;
             });
             
-            // Atualiza Cartões de Indicadores (combinando Vencido e Pendente no risco)
+            // Atualiza os cards de indicadores
             document.getElementById('stat-em_dia').textContent = statusCounts['Em Dia'];
             document.getElementById('stat-atencao').textContent = statusCounts['Atenção'];
             document.getElementById('stat-vencido').textContent = statusCounts['Vencido'] + statusCounts['Pendente'];
 
+            // Atualiza o gráfico de rosca
             renderComplianceChart(statusCounts);
         }
 
+        /**
+         * Cria ou recria o gráfico de rosca de conformidade.
+         */
         function renderComplianceChart(stats) {
             const ctx = document.getElementById('complianceChart').getContext('2d');
+            
+            // Se já existir um gráfico, destrói antes de criar outro (para não bugar)
             if (complianceChartInstance) {
                 complianceChartInstance.destroy();
             }
+
             complianceChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Em Dia', 'Vence em 30 dias', 'Risco/Vencido'],
-                    data: [stats.em_dia, stats.atencao, stats.vencido + stats.pendente],
                     datasets: [{
-                        data: [stats['Em Dia'], stats['Atenção'], stats['Vencido'] + stats['Pendente']],
+                        data: [
+                            stats['Em Dia'], 
+                            stats['Atenção'], 
+                            stats['Vencido'] + stats['Pendente']
+                        ],
                         backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
                         borderColor: '#FFFFFF',
                         borderWidth: 4
@@ -519,9 +713,14 @@
             });
         }
         
-        // --- FUNÇÕES DE SETUP E AUTENTICAÇÃO ---
+        // =====================================================
+        // INICIALIZAÇÃO DO FIREBASE E LOGIN
+        // =====================================================
 
-        /** Inicializa o Firebase e a Autenticação. */
+        /**
+         * Inicializa o Firebase e faz login anônimo.
+         * Depois, fica escutando mudanças de autenticação.
+         */
         async function initializeFirebase() {
             try {
                 if (!firebaseConfig.apiKey) {
@@ -529,22 +728,26 @@
                     document.getElementById('login-screen').classList.remove('hidden');
                     return;
                 }
+
+                // Inicializa o app e os serviços de Firestore e Auth
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Autenticação Anônima
+                // Faz login anônimo (não pede email/senha)
                 await signInAnonymously(auth);
 
+                // Observa se o usuário autenticado muda
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         userId = user.uid;
                         console.log("Usuário Firebase autenticado:", userId);
-                        // Se houver uma matrícula em localStorage, tenta carregar o app
+
+                        // Se já tinha uma matrícula salva no localStorage, tenta retomar a sessão
                         if (currentMatricula) {
                             handleLogin(currentMatricula, true);
                         } else {
-                             document.getElementById('login-screen').classList.remove('hidden');
+                            document.getElementById('login-screen').classList.remove('hidden');
                         }
                     } else {
                         console.log("Falha na autenticação ou sessão encerrada.");
@@ -559,7 +762,13 @@
             }
         }
 
-        /** Lida com o fluxo de login e carrega a interface correta. */
+        /**
+         * Faz o fluxo de login da matrícula.
+         * - Salva matrícula no localStorage
+         * - Esconde tela de login
+         * - Mostra app
+         * - Decide se é gestor ou funcionário
+         */
         function handleLogin(matricula, isSessionResume = false) {
             matricula = matricula.toUpperCase().trim();
             if (!matricula) {
@@ -574,16 +783,20 @@
             document.getElementById('app-container').classList.remove('hidden');
             document.getElementById('userIdDisplay').textContent = `Matrícula: ${currentMatricula}`;
 
-            // Configura e inicia o listener (apenas se for o primeiro login/resume de sessão)
+            // Se não for recomeço de sessão, configura o listener do Firestore
             if (!isSessionResume) {
                 setupFirestoreListeners(currentMatricula === 'GESTOR' ? 'gestor' : 'funcionario');
             }
             
-            // Exibe o painel correto
+            // Mostra painel correto com base na matrícula
             showPanel(currentMatricula === 'GESTOR' ? 'gestor' : 'funcionario');
         }
         
-        /** Configura o listener em tempo real (onSnapshot) do Firestore. */
+        /**
+         * Configura os listeners em tempo real (onSnapshot) no Firestore.
+         * - Se for funcionário, escuta só os registros daquela matrícula.
+         * - Se for gestor, escuta todos os registros.
+         */
         function setupFirestoreListeners(panel) {
             if (!db || !userId) return;
 
@@ -610,13 +823,16 @@
             }
         }
 
-        /** Alterna entre os painéis Gestor e Funcionário. */
+        /**
+         * Alterna entre os painéis Gestor e Funcionário.
+         * Também garante que só GESTOR consiga ver o painel do gestor.
+         */
         function showPanel(panel) {
             const isGestor = panel === 'gestor';
             
+            // Se tentar ir para o painel do Gestor sem ser GESTOR, barra
             if (isGestor && currentMatricula !== 'GESTOR') {
                 showModal("Acesso Negado", "Você não tem permissão para acessar o Painel do Gestor.");
-                // Se a tentativa de ir para Gestor falhar, força o retorno para Funcionário
                 if (currentMatricula) {
                     showPanel('funcionario'); 
                 } else {
@@ -625,44 +841,66 @@
                 return;
             }
             
-            // Alterna o conteúdo principal
+            // Mostra/Esconde o conteúdo correspondente
             document.getElementById('content-gestor').classList.toggle('hidden', !isGestor);
             document.getElementById('content-funcionario').classList.toggle('hidden', isGestor);
             
-            // Atualiza o estado da aba
+            // Atualiza visual das abas
             document.getElementById('tab-gestor').classList.toggle('active-tab', isGestor);
             document.getElementById('tab-funcionario').classList.toggle('active-tab', !isGestor);
             
-            // Garante que o listener correto esteja ativo ao mudar de aba
+            // Garante que o listener certo esteja ativo
             setupFirestoreListeners(panel); 
         }
 
-        // --- Event Listeners Globais ---
+        // =====================================================
+        // EVENTOS GERAIS DA PÁGINA (DOM)
+        // =====================================================
+
         document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebase(); // Inicia o Firebase e tenta Autenticar
+            // Inicializa Firebase e faz login anônimo
+            initializeFirebase(); 
             
-            // Login Screen Event
+            // Clique no botão de login
             document.getElementById('login-button').addEventListener('click', () => {
                 const matricula = document.getElementById('matricula-input').value;
-                // handleLogin chamará setupFirestoreListeners pela primeira vez
                 handleLogin(matricula); 
             });
+
+            // Permite dar Enter no campo de matrícula para logar
             document.getElementById('matricula-input').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     document.getElementById('login-button').click();
                 }
             });
 
-            // Tabs
+            // Troca para aba do Gestor
             document.getElementById('tab-gestor').addEventListener('click', () => showPanel('gestor'));
+
+            // Troca para aba do Funcionário
             document.getElementById('tab-funcionario').addEventListener('click', () => showPanel('funcionario'));
 
-            // Modal Close
+            // Fecha o modal de mensagem genérica
             document.getElementById('modal-close-button').addEventListener('click', () => {
                 document.getElementById('message-modal').classList.add('hidden');
             });
 
-            // Gerenciar Treinamentos MOCK (Para fins de Relatório, apenas simulação)
+            // Botão "Voltar para Login" (logout simples)
+            document.getElementById('logout-button').addEventListener('click', () => {
+                // limpa matrícula atual e o localStorage
+                currentMatricula = null;
+                localStorage.removeItem('currentMatricula');
+
+                // limpa o input da matrícula
+                const input = document.getElementById('matricula-input');
+                if (input) input.value = '';
+
+                // esconde o app e mostra a tela de login
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('login-screen').classList.remove('hidden');
+            });
+
+            // Abrir modal de "Gerenciar Treinamentos" (simulação)
             document.getElementById('open-manage-modal-btn').addEventListener('click', () => {
                 const listContainer = document.getElementById('manage-list');
                 listContainer.innerHTML = '';
@@ -678,8 +916,14 @@
                 });
                 document.getElementById('manage-modal').classList.remove('hidden');
             });
-            document.getElementById('close-manage-modal-btn').addEventListener('click', () => document.getElementById('manage-modal').classList.add('hidden'));
 
+            // Fechar modal de "Gerenciar Treinamentos"
+            document.getElementById('close-manage-modal-btn').addEventListener('click', () => {
+                document.getElementById('manage-modal').classList.add('hidden');
+            });
+
+            // (Opcional) Aqui poderiam entrar eventos do video-modal, se você quiser usar ele depois
+            // document.getElementById('close-video-modal-btn')...
         });
     </script>
 
