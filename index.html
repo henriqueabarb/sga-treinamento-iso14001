@@ -256,11 +256,11 @@
                             </div>
                         </div>
 
-                        <!-- Botão que abre modal de "Gerenciar Treinamentos" (simulação) -->
+                        <!-- Botão que abre modal de "Gerenciar Treinamentos" -->
                         <button 
                             id="open-manage-modal-btn" 
                             class="mt-6 bg-blue-700 text-white font-medium py-2 px-5 rounded-lg shadow-md hover:bg-blue-800 transition-colors">
-                            Gerenciar Treinamentos (Simulado)
+                            Gerenciar Treinamentos
                         </button>
                     </section>
                 </div>
@@ -346,7 +346,7 @@
         </div>
     </div>
 
-    <!-- Modal de "Gerenciar" treinamentos (apenas visual, sem backend real) -->
+    <!-- Modal de "Gerenciar" treinamentos (agora funcional com Firestore) -->
     <div id="manage-modal" class="modal hidden">
         <div class="bg-white w-full max-w-2xl p-6 rounded-lg shadow-xl m-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
@@ -354,21 +354,66 @@
                 <button id="close-manage-modal-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
             </div>
             
+            <!-- Formulário para adicionar novo treinamento -->
             <h4 class="text-lg font-semibold text-gray-700 mb-2">
-                Adicionar Novo Treinamento (Simulação visual)
+                Adicionar Novo Treinamento
             </h4>
-            <div class="p-4 border rounded-lg mb-6 bg-gray-50 text-gray-600">
-                <p>
-                    O cadastro de novos treinamentos é uma função do Backend (Java/Spring Boot).
-                    Esta tela é só para mostrar no relatório (não grava nada de verdade).
-                </p>
+            <div class="p-4 border rounded-lg mb-6 bg-gray-50 text-gray-600 space-y-3">
+                <!-- Campo título -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                    <input 
+                        id="novo-treinamento-titulo"
+                        type="text"
+                        class="w-full border rounded-md p-2 text-sm"
+                        placeholder="Ex: Aspectos e Impactos Ambientais (ISO 14001)">
+                </div>
+
+                <!-- Campo periodicidade -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Periodicidade (dias)</label>
+                    <input 
+                        id="novo-treinamento-periodicidade"
+                        type="number"
+                        min="1"
+                        class="w-full border rounded-md p-2 text-sm"
+                        placeholder="Ex: 365">
+                </div>
+
+                <!-- Campo público-alvo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Público-alvo</label>
+                    <input 
+                        id="novo-treinamento-publico"
+                        type="text"
+                        class="w-full border rounded-md p-2 text-sm"
+                        placeholder="Ex: todos, operação, administrativo...">
+                </div>
+
+                <!-- Campo relevância -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Relevância</label>
+                    <input 
+                        id="novo-treinamento-relevancia"
+                        type="text"
+                        class="w-full border rounded-md p-2 text-sm"
+                        placeholder="Ex: ISO, Legal, Operacional (Goiás)">
+                </div>
+
+                <!-- Botão de adicionar -->
+                <button 
+                    id="btn-adicionar-treinamento"
+                    class="mt-2 bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-blue-800">
+                    Adicionar Treinamento
+                </button>
             </div>
 
+            <!-- Lista dos treinamentos vindos do Firestore -->
             <h4 class="text-lg font-semibold text-gray-700 mb-2">
-                Treinamentos Existentes (Hardcoded)
+                Treinamentos Cadastrados
             </h4>
             <div id="manage-list" class="space-y-2">
-                <!-- A lista é preenchida via JavaScript com base no array TREINAMENTOS -->
+                <!-- Preenchido via JavaScript -->
             </div>
         </div>
     </div>
@@ -392,7 +437,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getFirestore, doc, setDoc, onSnapshot, collection, query, where, 
-            serverTimestamp, setLogLevel 
+            serverTimestamp, setLogLevel, addDoc, deleteDoc 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURAÇÃO REAL DO FIREBASE ---
@@ -423,14 +468,9 @@
         // Instância do gráfico de rosca (para poder destruir e recriar quando atualizar)
         let complianceChartInstance = null;
         
-        // --- DADOS MOCK (Catálogo de Treinamentos, simulando Backend Java) ---
-        // Esse array representa a "tabela" de tipos de treinamentos que existem na empresa
-        const TREINAMENTOS = [
-            { id: 'T101', titulo: 'Aspectos e Impactos Ambientais (ISO 14001)', periodicidade: 365, publico_alvo: "todos", relevancia_goias: 'ISO, Legal' },
-            { id: 'T102', titulo: 'Gerenciamento de Resíduos Sólidos', periodicidade: 180, publico_alvo: "operacao", relevancia_goias: 'Legal, Operacional (Goiás)' },
-            { id: 'T103', titulo: 'Uso Racional da Água', periodicidade: 540, publico_alvo: "todos", relevancia_goias: 'ISO, Operacional' },
-            { id: 'T104', titulo: 'Legislação do ICMS Ecológico (Goiás)', periodicidade: 730, publico_alvo: "todos", relevancia_goias: 'Legal, Administrativo' },
-        ];
+        // --- CATÁLOGO DE TREINAMENTOS (agora vem do Firestore) ---
+        // Antes era um array fixo. Agora será alimentado pelo Firestore.
+        let TREINAMENTOS = [];
         
         // =====================================================
         // FUNÇÕES DE LÓGICA DE NEGÓCIO (CONFORMIDADE)
@@ -457,10 +497,16 @@
 
         /**
          * Retorna a coleção do Firestore onde os registros de conformidade são salvos.
-         * A estrutura usa um path "artifacts/{appId}/public/data/registros_conformidade".
          */
         function getRegistrosCollection() {
             return collection(db, `/artifacts/${appId}/public/data/registros_conformidade`);
+        }
+
+        /**
+         * Retorna a coleção de "treinamentos" no Firestore (catálogo).
+         */
+        function getTreinamentosCollection() {
+            return collection(db, `/artifacts/${appId}/public/data/catalogo_treinamentos`);
         }
 
         // =====================================================
@@ -479,7 +525,7 @@
             if (!treinamento) throw new Error("Treinamento não encontrado no catálogo.");
 
             const dataConclusao = new Date();
-            const validadeMillis = treinamento.periodicidade * 24 * 60 * 60 * 1000;
+            const validadeMillis = (treinamento.periodicidade || 0) * 24 * 60 * 60 * 1000;
             const dataValidade = new Date(dataConclusao.getTime() + validadeMillis);
             
             const docId = `${matricula}_${treinamentoId}`; 
@@ -489,7 +535,7 @@
                 treinamentoId: treinamentoId,
                 dataConclusao: serverTimestamp(),   // serverTimestamp para garantir horário do servidor
                 dataValidade: dataValidade.toISOString(),
-                periodicidadeDias: treinamento.periodicidade,
+                periodicidadeDias: treinamento.periodicidade || 0,
             };
 
             try {
@@ -540,15 +586,21 @@
                 let colorClass, statusText, actionEnabled;
                 if (status === 'Em Dia') { 
                     colorClass = 'bg-status-em_dia'; 
-                    statusText = `Válido até: ${dataValidade.toLocaleDateString('pt-BR')}`; 
+                    statusText = dataValidade
+                        ? `Válido até: ${dataValidade.toLocaleDateString('pt-BR')}` 
+                        : 'Em dia';
                     actionEnabled = false; 
                 } else if (status === 'Atenção') { 
                     colorClass = 'bg-status-atencao'; 
-                    statusText = `ATENÇÃO! Vence em: ${dataValidade.toLocaleDateString('pt-BR')}`; 
+                    statusText = dataValidade
+                        ? `ATENÇÃO! Vence em: ${dataValidade.toLocaleDateString('pt-BR')}` 
+                        : 'Vence em breve'; 
                     actionEnabled = true; 
                 } else if (status === 'Vencido') { 
                     colorClass = 'bg-status-vencido'; 
-                    statusText = `VENCIDO desde: ${dataValidade.toLocaleDateString('pt-BR')}`; 
+                    statusText = dataValidade
+                        ? `VENCIDO desde: ${dataValidade.toLocaleDateString('pt-BR')}` 
+                        : 'VENCIDO'; 
                     actionEnabled = true; 
                 } else { 
                     colorClass = 'bg-status-vencido'; 
@@ -562,8 +614,8 @@
                 const card = `
                     <div class="card p-5 bg-white rounded-xl shadow-lg border-l-4 ${colorClass.replace('bg-', 'border-')}">
                         <h4 class="text-lg font-semibold text-gray-800 mb-2">${treinamento.titulo}</h4>
-                        <p class="text-sm text-gray-600">Periodicidade: ${treinamento.periodicidade} dias</p>
-                        <p class="text-sm text-gray-600">Relevância: ${treinamento.relevancia_goias}</p>
+                        <p class="text-sm text-gray-600">Periodicidade: ${treinamento.periodicidade || 0} dias</p>
+                        <p class="text-sm text-gray-600">Relevância: ${treinamento.relevancia_goias || '-'}</p>
                         <p class="text-sm font-semibold mt-2 text-gray-700">Validade: ${validadeText}</p>
                         <span class="inline-block px-3 py-1 mt-2 text-xs font-semibold text-white rounded-full ${colorClass}">${statusText}</span>
                         ${actionEnabled ? `
@@ -712,6 +764,92 @@
                 }
             });
         }
+
+        /**
+         * Fica “escutando” a coleção de treinamentos no Firestore.
+         * Sempre que alguém adicionar/excluir/editar, esse array TREINAMENTOS é atualizado.
+         */
+        function setupTreinamentosListener() {
+            if (!db) return;
+
+            const colRef = getTreinamentosCollection();
+
+            onSnapshot(colRef, (snapshot) => {
+                // Atualiza o array global de treinamentos com o que veio do banco
+                TREINAMENTOS = snapshot.docs.map(docSnap => ({
+                    id: docSnap.id,
+                    ...docSnap.data()
+                }));
+
+                console.log("Catálogo de treinamentos atualizado:", TREINAMENTOS);
+
+                // Se o modal de gerenciar estiver aberto, atualiza a listinha de lá também
+                const manageModal = document.getElementById('manage-modal');
+                if (manageModal && !manageModal.classList.contains('hidden')) {
+                    renderManageList();
+                }
+            }, (error) => {
+                console.error("Erro ao escutar catálogo de treinamentos:", error);
+            });
+        }
+
+        /**
+         * Renderiza a lista de treinamentos dentro do modal "Gerenciar Treinamentos".
+         * Coloca um botão de excluir em cada item.
+         */
+        function renderManageList() {
+            const listContainer = document.getElementById('manage-list');
+            if (!listContainer) return;
+
+            listContainer.innerHTML = '';
+
+            if (TREINAMENTOS.length === 0) {
+                listContainer.innerHTML = `
+                    <p class="text-sm text-gray-500">
+                        Nenhum treinamento cadastrado ainda. Adicione um novo ao lado.
+                    </p>
+                `;
+                return;
+            }
+
+            TREINAMENTOS.forEach(t => {
+                listContainer.innerHTML += `
+                    <div class="flex justify-between items-center p-3 bg-gray-100 rounded">
+                        <div>
+                            <span class="font-medium">${t.titulo}</span>
+                            <span class="text-sm text-gray-500 ml-2">(${t.periodicidade || 0} dias)</span>
+                            <div class="text-xs text-gray-500">
+                                Público-alvo: ${t.publico_alvo || '-'} | Relevância: ${t.relevancia_goias || '-'}
+                            </div>
+                        </div>
+                        <button 
+                            class="btn-excluir-treinamento text-red-600 text-sm font-semibold hover:underline"
+                            data-id="${t.id}">
+                            Excluir
+                        </button>
+                    </div>
+                `;
+            });
+
+            // Adiciona evento no botão de excluir
+            document.querySelectorAll('.btn-excluir-treinamento').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    if (!id) return;
+
+                    const confirmar = confirm("Tem certeza que deseja excluir este treinamento?");
+                    if (!confirmar) return;
+
+                    try {
+                        // Exclui o documento no Firestore
+                        await deleteDoc(doc(getTreinamentosCollection(), id));
+                    } catch (error) {
+                        console.error("Erro ao excluir treinamento:", error);
+                        showModal("Erro", "Não foi possível excluir o treinamento.");
+                    }
+                });
+            });
+        }
         
         // =====================================================
         // INICIALIZAÇÃO DO FIREBASE E LOGIN
@@ -733,6 +871,9 @@
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+
+                // Começa a escutar o catálogo de treinamentos assim que o Firestore estiver pronto
+                setupTreinamentosListener();
 
                 // Faz login anônimo (não pede email/senha)
                 await signInAnonymously(auth);
@@ -900,20 +1041,9 @@
                 document.getElementById('login-screen').classList.remove('hidden');
             });
 
-            // Abrir modal de "Gerenciar Treinamentos" (simulação)
+            // Abrir modal de "Gerenciar Treinamentos"
             document.getElementById('open-manage-modal-btn').addEventListener('click', () => {
-                const listContainer = document.getElementById('manage-list');
-                listContainer.innerHTML = '';
-                TREINAMENTOS.forEach(t => {
-                    listContainer.innerHTML += `
-                        <div class="flex justify-between items-center p-3 bg-gray-100 rounded">
-                            <div>
-                                <span class="font-medium">${t.titulo}</span>
-                                <span class="text-sm text-gray-500 ml-2">(${t.periodicidade} dias)</span>
-                            </div>
-                        </div>
-                    `;
-                });
+                renderManageList(); // desenha a lista com o que tiver em TREINAMENTOS
                 document.getElementById('manage-modal').classList.remove('hidden');
             });
 
@@ -922,10 +1052,45 @@
                 document.getElementById('manage-modal').classList.add('hidden');
             });
 
-            // (Opcional) Aqui poderiam entrar eventos do video-modal, se você quiser usar ele depois
-            // document.getElementById('close-video-modal-btn')...
+            // Clique no botão “Adicionar Treinamento”
+            document.getElementById('btn-adicionar-treinamento').addEventListener('click', async () => {
+                const tituloInput = document.getElementById('novo-treinamento-titulo');
+                const periodicidadeInput = document.getElementById('novo-treinamento-periodicidade');
+                const publicoInput = document.getElementById('novo-treinamento-publico');
+                const relevanciaInput = document.getElementById('novo-treinamento-relevancia');
+
+                const titulo = tituloInput.value.trim();
+                const periodicidade = Number(periodicidadeInput.value);
+                const publico_alvo = publicoInput.value.trim() || 'todos';
+                const relevancia_goias = relevanciaInput.value.trim() || '';
+
+                if (!titulo || !periodicidade) {
+                    alert("Preencha pelo menos o título e a periodicidade (dias).");
+                    return;
+                }
+
+                try {
+                    await addDoc(getTreinamentosCollection(), {
+                        titulo,
+                        periodicidade,
+                        publico_alvo,
+                        relevancia_goias
+                    });
+
+                    // limpa inputs depois de salvar
+                    tituloInput.value = '';
+                    periodicidadeInput.value = '';
+                    publicoInput.value = '';
+                    relevanciaInput.value = '';
+
+                } catch (error) {
+                    console.error("Erro ao adicionar treinamento:", error);
+                    showModal("Erro", "Não foi possível adicionar o treinamento.");
+                }
+            });
         });
     </script>
 
 </body>
 </html>
+
