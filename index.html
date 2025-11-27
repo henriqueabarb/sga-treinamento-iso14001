@@ -134,9 +134,32 @@
         import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, onSnapshot, collection, query, where, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variáveis globais para Firebase (Obrigatório para o ambiente Canvas)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+const firebaseConfig = {
+  apiKey: "AIzaSyBVyqEhlJsxuLeQrtjZRS538JZf28Pqtbk",
+  authDomain: "sga-treinamento-goias.firebaseapp.com",
+  projectId: "sga-treinamento-goias",
+  storageBucket: "sga-treinamento-goias.firebasestorage.app",
+  messagingSenderId: "1072216886470",
+  appId: "1:1072216886470:web:0788e8f46a234189c19bc7"
+  // Não precisamos do measurementId para o funcionamento do Firestore
+};
+
+// Usa o projectId como AppId para consistência com o caminho do Firestore
+const appId = firebaseConfig.projectId; 
+// Define initialAuthToken como null, pois usaremos autenticação anônima
+const initialAuthToken = null; 
+```
+
+**Observação:** Eu removi o `measurementId` (`G-S78X7K0ZLM`) porque ele é usado apenas para o Google Analytics e não é necessário para a funcionalidade do Firestore (banco de dados).
+
+### Próximos Passos (Publicação)
+
+1.  **Salve:** Salve seu arquivo `index.html` com essa nova configuração.
+2.  **Commit & Push:** Volte ao terminal, pois essa é uma mudança crucial. Use os comandos Git:
+    ```bash
+    git add .
+    git commit -m "Configuracao final do Firebase no index.html"
+    git push -u origin main
 
         // Variáveis globais
         let app, db, auth, userId;
